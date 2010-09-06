@@ -1,0 +1,2 @@
+*build-4:*
+ - fixed bug with that closed multiple sql tabs
