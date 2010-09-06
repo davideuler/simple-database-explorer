@@ -9,6 +9,8 @@ import re
 from threading import Thread
 import pyodbc
 from decimal import Decimal
+import sqlite3
+import os
 
 def getFont(size):
     font = QtGui.QFont()
@@ -159,7 +161,7 @@ class SqlTab(QtGui.QWidget):
         else:
             sql = self.editor.text()
 
-        return unicode(sql).replace("\n\n", " ").strip()
+        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip()) #.replace("\n\n", " ") \-\-.*\n
 
     def setSql(self, sql):
         if self.editor.hasSelectedText():
@@ -215,21 +217,30 @@ class SqlTab(QtGui.QWidget):
         try:
             print "ALIAS:", self.alias
             tableName = unicode(self.alias[aliasTemp])
-            columns = self.connTab.catalog[tableName]["COLUMNS"].keys() #[i[0] for i in self.connTab.catalog[tableName]["COLUMNS"]]
+            columns = self.connTab.catalog[tableName]["COLUMNS"].keys()
 
             if len(columns) == 0:
                 print "GET columns catalog from DB!"
                 t = self.conn.record(tableName)
+##                t2 = self.connTab.cursor.columns(table=tableName) + self.connTab.cursor.columns(table=tableName.lower())
 
-                self.connTab.catalog[tableName]["COLUMNS"] = dict([(unicode(t.field(c).name()), (t.field(c).type(), t.field(c).length())) for c in range(len(t))])
+                #self.connTab.catalog[tableName]["COLUMNS"] = dict([(unicode(t.field(c).name()), (t.field(c).type(), t.field(c).length())) for c in range(len(t))])
+                self.connTab.catalog[tableName]["COLUMNS"] = {}
+                for c in self.connTab.cursor.columns(table=tableName):
+                    self.connTab.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
+
+                for c in self.connTab.cursor.columns(table=tableName.lower()):
+                    self.connTab.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
+
                 self.connTab.saveCatalog()
 
                 columns = self.connTab.catalog[tableName]["COLUMNS"].keys()
-        except:
+        except Exception as exc:
+            print exc.args
             print "Error at getting alias"
-            print "aliasTemp:", aliasTemp, " not found in:"
+            print "aliasTemp: '%s'" % aliasTemp, " not found in:"
             for i in self.alias:
-                print i, self.alias[i]
+                print "%s: '%s'" % (i, self.alias[i])
             columns = []
 
         if len(columns) > 0:
@@ -293,26 +304,16 @@ class SqlTab(QtGui.QWidget):
         if len(sqlparsed) > 0:
             # is select
             if len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT':
-##                self.query = QtSql.QSqlQuery(db=self.conn)
-##                self.query.setForwardOnly(True)
-##                self.query.exec_(self.getSql())
                 try:
                     self.query2 = self.connTab.cursor.execute(self.getSql())
 
                 except:
                     error = True
 
-##                if len(self.query.lastError().databaseText().toUtf8()) > 0:
-##                    error = True
-##
-##                record = self.query.record()
                 # ==== SELECT ====
                 if error == False:
                     self.columnsLen = len(self.query2.description)
                     self.model = QtGui.QStandardItemModel(0, self.columnsLen)
-
-    ##                for i in range(record.count()):
-    ##                    self.model.setHeaderData(i, QtCore.Qt.Horizontal, record.fieldName(i), role=0)
 
                     for index, column in enumerate(self.query2.description):
                         self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
@@ -363,10 +364,6 @@ class SqlTab(QtGui.QWidget):
 
             # DATA
             i = 0
-##            while query.next():
-##                line = u"%s;\n" % u";".join((unicode(query.value(j).toString()) for j in xrange(columnsLen)))
-##                o.write(line.encode('UTF-8'))
-##                i += 1
 
             for row in self.query2:
                 print row
@@ -400,7 +397,7 @@ class SqlTab(QtGui.QWidget):
         elif isinstance(x, pyodbc.Date) or isinstance(x, pyodbc.DATETIME) or isinstance(x, pyodbc.Time):
             return unicode(x)
         elif isinstance(x, pyodbc.BINARY):
-            return unicode(x)
+            return x #None #unicode(x)
         else:
             return x
 
@@ -473,7 +470,13 @@ class ConnTab(QtGui.QWidget):
             self.icon = QtGui.QIcon("files/icons/ModifiedIcon.ico")
 
     def getCatalog(self):
+        print "os.path.exists(files/cache/PostgreSQL-mynews.pickle)"
+        print os.path.exists("files/cache/PostgreSQL-mynews.pickle")
         catalog = {}
+        if os.path.exists("files/cache/%s.sqlite" % self.name):
+            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
+        else:
+            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
         print "START CATALOG LOAD: %s" % time.ctime()
 
         for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
@@ -481,60 +484,6 @@ class ConnTab(QtGui.QWidget):
             #print i
             catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
 
-##        # Test if table in current schema
-##        for table in map(unicode, self.conn.tables(5)):
-##            query = QtSql.QSqlQuery(query="SELECT 1 FROM TYPES;" ;db=self.conn)
-##
-##
-##            if len(self.query.lastError().databaseText().toUtf8()) > 0:
-##                error = True
-##            catalog[i] = dict([("TYPE", 0), ("COLUMNS", dict())])
-
-##        tableList = []
-##
-##        for tableType in [1]: #1: tables + 4: views = 5
-##            print tableType
-##            for table in self.conn.tables(tableType):
-##                print table
-##                current = qtestit(self, self.conn, table, tableType)
-##                tableList.append(current)
-##                current.start()
-##                time.sleep(0.1)
-##
-##        print len(tableList)
-##
-##        for t in tableList:
-##            print "Table: ", t.tableName, t.table
-##            #t.wait()
-##            catalog[unicode(t.tableName).upper()] = t.table
-
-
-##        if self.connSettings['driver'] == 'QODBC' :
-##            import pyodbc
-##            cnxn = pyodbc.connect('DSN=%s;PWD=%s' % (self.connSettings["database"], self.connSettings["password"]))
-##            cursor = cnxn.cursor()
-##
-##            # GET CATALOG
-##
-##            for table in catalog:
-##                print table
-##                cursor.columns(table=table)
-##                #print table[2]
-##                try:
-##                    catalog[table[2].upper()]["COLUMNS"][table[3]] = (0, 0)
-##                except:
-##                    pass #print "Error. Not found table: %s" % table[2]
-##
-##        else:
-##        if self.connSettings['driver'] != 'QODBC' :
-##            for tableType in [1, 4]: #1: tables + 4: views = 5
-##                for table in self.conn.tables(tableType):
-##                    print table
-##                    t = self.conn.record(table)
-##                    catalog[unicode(table).upper()] =  {
-##                        "TYPE": tableType,
-##                        "COLUMNS": dict([(unicode(t.field(c).name()), (t.field(c).type(), t.field(c).length())) for c in range(len(t))])
-##                        }
 
         print "END CATALOG LOAD: %s" % time.ctime()
 
