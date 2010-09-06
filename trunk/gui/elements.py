@@ -434,6 +434,7 @@ class ConnTab(QtGui.QWidget):
         self.conn.open()
         self.name = connName
         self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
+        self.conn2.autocommit = True
         self.cursor = self.conn2.cursor()
         # AUTO COMPLETE
         self.loadCatalog()
