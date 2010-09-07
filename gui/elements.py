@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui, QtSql, Qsci
+from PyQt4 import QtCore, QtGui, Qsci
 import yaml
 from yaml.parser import ParserError
 import pickle
@@ -59,12 +59,12 @@ class SqlTab(QtGui.QWidget):
         super(SqlTab, self).__init__(parent)
         #   sql tab
         #self.sqlTab = QtGui.QWidget()
-        self.conn = parent.conn
+        #self.conn = parent.conn
         self.connTab = parent
         self.alias = {}
 
         self.saveTo = None
-        self.query = QtSql.QSqlQuery(db=self.conn)
+        #self.query = QtSql.QSqlQuery(db=self.conn)
         self.query2 = []
         self.rownum = 0
         self.fetchRowsNum = 0
@@ -426,9 +426,9 @@ class ConnTab(QtGui.QWidget):
         super(ConnTab, self).__init__(parent)
 
         # SQLITE
-        self.conn = self.getConnection(connName=connName, **connSettings)
+        #self.conn = self.getConnection(connName=connName, **connSettings)
         self.connSettings = connSettings
-        self.conn.open()
+        #self.conn.open()
         self.name = connName
         self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
         self.conn2.autocommit = True
@@ -453,15 +453,15 @@ class ConnTab(QtGui.QWidget):
         self.verticalLayout_3.addWidget(self.childTabs)
         self.setLayout(self.verticalLayout_3)
 
-    def getConnection(self, connName, driver='QODBC', host='localhost', database='', schema='', port=0, user='', password=''):
-        conn = QtSql.QSqlDatabase.addDatabase(driver, connName)
-        conn.setHostName(host)
-        conn.setDatabaseName(database)
-        conn.setPort(port)
-        conn.setUserName(user)
-        conn.setPassword(password)
+##    def getConnection(self, connName, driver='QODBC', host='localhost', database='', schema='', port=0, user='', password=''):
+##        conn = QtSql.QSqlDatabase.addDatabase(driver, connName)
+##        conn.setHostName(host)
+##        conn.setDatabaseName(database)
+##        conn.setPort(port)
+##        conn.setUserName(user)
+##        conn.setPassword(password)
 
-        return conn
+##        return conn
 
     def setIcon(self):
         if self.conn2:

@@ -39,6 +39,7 @@ class Target(object):
 data_files = [('files', ['files/settings.yaml.example']),
               ('files/cache', ['files/cache/counter.txt']),
               ('files/icons', ['files/icons/AddedIcon.ico',
+                               'files/icons/sdbe.ico',
                                'files/icons/sdbe.ico']),
               ('files/sql', ['files/sql/counter.txt']),
               ('files/testDB', ['files/testDB/db_news.sqlite']),
@@ -53,7 +54,7 @@ data_files = [('files', ['files/settings.yaml.example']),
 
 
 
-includes = ['sip']
+includes = ['sip', 'decimal', 'datetime']
 excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'email', 'pywin.debugger',
             'pywin.debugger.dbgcon', 'pywin.dialogs', 'tcl',
             'Tkconstants', 'Tkinter']
@@ -114,6 +115,7 @@ setup(
                           "skip_archive": False,
                           "ascii": False,
                           "custom_boot_script": '',
+
                          }
               },
 
@@ -135,4 +137,3 @@ setup(
 #os.popen('rar a exe\DemoCollector-build-%s.rar exe\DemoCollector-build-%s' % (version, version))
 
 # And we are done. That's a setup script :-D
-

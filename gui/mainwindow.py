@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui, QtSql, Qsci
+from PyQt4 import QtCore, QtGui, Qsci
 import yaml
 from yaml.parser import ParserError
 import os
