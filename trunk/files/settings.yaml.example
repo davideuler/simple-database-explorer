@@ -4,11 +4,9 @@
 connections:
     # SQLITE - should be working
     TEST_SQLITE:
-        driver: QSQLITE
         database: files/testDB/db_news.sqlite
 
     BIG_SQLITE:
-        driver: QSQLITE
         database: files/testDB/BigTypes.sqlite
 
     # POSTGRES
