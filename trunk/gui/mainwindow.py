@@ -7,6 +7,7 @@ from random import randint
 from elements import *
 import datetime
 import pyodbc
+from subprocess import Popen
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -50,6 +51,7 @@ class Ui_MainWindow(object):
         self.menubar.setGeometry(QtCore.QRect(0, 0, 808, 20))
         self.menubar.setFont(getFont(7))
         self.fileMenu = QtGui.QMenu(self.menubar)
+        self.editMenu = QtGui.QMenu(self.menubar)
         self.actionsMenu = QtGui.QMenu(self.menubar)
         self.navigateMenu = QtGui.QMenu(self.menubar)
         self.settingsMenu = QtGui.QMenu(self.menubar)
@@ -83,6 +85,12 @@ class Ui_MainWindow(object):
         self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.saveAsAction)
 
+        # ==== ==== ==== ==== ==== ==== ==== ====
+        # EDIT
+        # ==== ==== ==== ==== ==== ==== ==== ====
+        self.searchEditorAction = createAction("&Find", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
+
+        self.editMenu.addAction(self.searchEditorAction)
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
         # ==== ==== ==== ==== ==== ==== ==== ====
@@ -148,15 +156,18 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.openSettingsAction = createAction("Open settings", self, "MainWindow", "Ctrl+Alt+S", self.openSettings, 8)
         self.saveSettingsAction = createAction("Save/Reload settings", self, "MainWindow", "", self.saveSettings, 8)
-        self.importODBCAction = createAction("Import ODBC", self, "MainWindow", "", self.importODBC, 8)
+        self.importODBCAction = createAction("Import ODBC connetions into settings", self, "MainWindow", "", self.importODBC, 8)
+        self.openODBCManagerAction = createAction("Open ODBC Manager", self, "MainWindow", "", self.openODBCManager, 8)
 
         self.settingsMenu.addAction(self.openSettingsAction)
         self.settingsMenu.addAction(self.saveSettingsAction)
         self.settingsMenu.addSeparator()
+        self.settingsMenu.addAction(self.openODBCManagerAction)
         self.settingsMenu.addAction(self.importODBCAction)
 
         # MENU
         self.menubar.addAction(self.fileMenu.menuAction())
+        self.menubar.addAction(self.editMenu.menuAction())
         self.menubar.addAction(self.actionsMenu.menuAction())
         self.menubar.addAction(self.navigateMenu.menuAction())
         self.menubar.addAction(self.settingsMenu.menuAction())
@@ -169,6 +180,14 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
         self.openWorkspace()
+        #self.statusBar().showMessage('Ready', 2000)
+        #self.setToolTip(QtGui.QToolTip())
+
+    def warningMessage(self, title, message):
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, title, message,
+                    QtGui.QMessageBox.NoButton, self)
+            msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
+            msgBox.exec_()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NEW CONN, SQL
@@ -186,6 +205,7 @@ class Ui_MainWindow(object):
         self.console.setText('')
         self.openNewConnection(connName)
 
+
     def openNewConnection(self, connName, openNewSql=True):
         connSettings = self.sett.settings['connections'][connName]
         connTab = ConnTab(connName=connName, connSettings=connSettings)
@@ -201,6 +221,11 @@ class Ui_MainWindow(object):
             self.newSqlScript()
 
     def newSqlScript(self, path=None):
+##        self.statusBar().hideOrShow()
+##        self.statusBar().clearMessage()
+##        self.statusBar().reformat()
+##        self.setStatusBar(None)
+
 
         connTab = self.mainTabs.currentWidget()
         sqlTab = SqlTab(connTab)
@@ -213,9 +238,15 @@ class Ui_MainWindow(object):
         if path != None:
             try:
                 self.openFile(path)
-            except:
-                print "error at opening file"
+            except Exception as exc:
+                print "Error opening file: %s" % path, unicode(exc.args)
+                #self.warningMessage("Error opening file: %s" % path, unicode(exc.args))
 
+    def showToolTip(self, text):
+        p = self.pos()
+        p.setX(p.x() + (self.width() / 2))
+        p.setY(p.y() + (self.height() - 10))
+        QtGui.QToolTip.showText(p, text)
     # ==== ==== ==== ==== ==== ==== ==== ====
     # FILE HANDLING
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -250,12 +281,19 @@ class Ui_MainWindow(object):
         childTabs.currentWidget().saveTo = s
         childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
+        self.showToolTip("Saved.")
+
     def saveAsDialog(self):
         o = QtGui.QFileDialog(self)
         o.setAcceptMode(1)
         QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
         o.open()
 
+    # ==== ==== ==== ==== ==== ==== ==== ====
+    # EDIT
+    # ==== ==== ==== ==== ==== ==== ==== ====
+    def searchEditor(self):
+        self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
@@ -271,6 +309,7 @@ class Ui_MainWindow(object):
             self.openNewConnection(unicode(connection))
             #self.itemLabel.setText(item)
         #self.console.setFocus()
+        self.showToolTip("Connection has been opened.")
 
     def toSqlEditor(self):
         self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
@@ -324,10 +363,11 @@ class Ui_MainWindow(object):
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
-        print "START executeSql: %s" % datetime.datetime.now()
         self.saveWorkspace()
-        print "END executeSql: %s" % datetime.datetime.now()
+        startTime = time.time()
         self.mainTabs.currentWidget().childTabs.currentWidget().execute()
+        #print "Sql execute in %s seconds." % time.time() - startTime
+        self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
         self.mainTabs.currentWidget().executeThread.stop()
@@ -340,8 +380,6 @@ class Ui_MainWindow(object):
         o.open()
 
     def autoComplete(self):
-        #editor = self.mainTabs.currentWidget().childTabs.currentWidget().editor
-        #editor.showUserList(1, sorted(self.mainTabs.currentWidget().catalog.keys()))
         self.mainTabs.currentWidget().childTabs.currentWidget().showAutoComplete()
 
     def showColumnAutoComplete(self):
@@ -349,9 +387,14 @@ class Ui_MainWindow(object):
 
     def formatSql(self):
         self.mainTabs.currentWidget().childTabs.currentWidget().formatSql()
+        self.showToolTip("Sql has been formated.")
 
     def reloadCatalogCall(self):
+        startTime = time.time()
         self.mainTabs.currentWidget().reloadCatalog()
+        self.showToolTip("Catalog has been reloadet in %s seconds for %s tables."
+                            % (round(time.time() - startTime, 4),
+                            len(self.mainTabs.currentWidget().catalog)))
 
     def showCatalogCall(self):
         self.mainTabs.currentWidget().showCatalog()
@@ -360,7 +403,10 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     def loadSettings(self):
         sett = Settings("settings.yaml")
-        sett.load()
+        message = sett.load()
+
+        if message[0] == "Error":
+            self.warningMessage("Settings load ERROR.", message[1])
         return sett
 
     def openSettings(self):
@@ -375,6 +421,7 @@ class Ui_MainWindow(object):
             print "saveSettings"
             self.mainTabs.currentWidget().save()
             self.sett = self.loadSettings()
+            self.showToolTip("Settings have been saved and reloadet.")
 
     # use decorator?
     def importODBC(self):
@@ -384,11 +431,16 @@ class Ui_MainWindow(object):
             for conn in odbc:
                 if conn not in self.sett.settings['connections']:
                     settingsEditor = self.mainTabs.currentWidget().editor
-                    s = "    %s:\n" % conn
-                    for i, j in zip(["#type", "#schema", "password"], [odbc[conn], "if_needet", "ENTER_IT"]):
+                    s = "    %s:  #[%s]\n" % (conn, odbc[conn])
+                    for i, j in zip(["#schema", "password"], ["if_needet", "ENTER_IT"]):
                         s += "        %s: %s\n" % (i, j)
                     settingsEditor.setText(settingsEditor.text() + "\n" + s)
 
+    def openODBCManager(self):
+        try:
+            Popen(["odbcad32.exe"])
+        except:
+            self.warningMessage("Error", "Could not open ODBC Manager.")
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # WORKSPACE
@@ -419,23 +471,21 @@ class Ui_MainWindow(object):
         if os.path.exists("files/workspace.yaml"):
             try:
                 workspace = yaml.load(open("files/workspace.yaml"))
-            except:
+            except Exception as exc:
+                self.warningMessage("Error at loading workspace!", unicode(exc.args))
                 workspace = list()
-                #os.remove("files/workspace.yaml")
 
             for connName in workspace:
                 try:
                     self.openNewConnection(connName, False)
-
-                    # SqlTabs
                     for sqlScript in workspace[connName]:
                         self.newSqlScript(sqlScript)
-                except:
-                    print "Error loading workspace for conn: %s" % connName
+                except Exception as exc:
+                    self.warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
 
     def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
-        reply = QtGui.QMessageBox.question(self, 'Message',
+        reply = QtGui.QMessageBox.question(self, 'Quit?',
                          quit_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 
         if reply == QtGui.QMessageBox.Yes:
@@ -451,6 +501,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Simple database explorer", None, QtGui.QApplication.UnicodeUTF8))
 
         self.fileMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&File", None, QtGui.QApplication.UnicodeUTF8))
+        self.editMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Edit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Actions", None, QtGui.QApplication.UnicodeUTF8))
         self.navigateMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Navigate", None, QtGui.QApplication.UnicodeUTF8))
         self.settingsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Settings", None, QtGui.QApplication.UnicodeUTF8))
