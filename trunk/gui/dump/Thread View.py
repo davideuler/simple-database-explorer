@@ -208,3 +208,36 @@ class ExecuteThread(QtCore.QThread):
 ##            sqlTab.table.resizeColumnsToContents()
             #self.selectionModel = QtGui.QItemSelectionModel(model)
             #sqlTab.table.setSelectionModel(self.selectionModel)
+
+
+################################
+class testit(Thread):
+    def __init__ (self,db, table, tableType):
+        Thread.__init__(self)
+        self.db = db
+        self.tableName = table
+        self.table = {}
+        self.tableType = tableType
+    def run(self):
+        self.tableName
+        t = self.db.record(self.tableName)
+        self.table = {
+            "TYPE": self.tableType,
+            "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
+            }
+
+class qtestit(QtCore.QThread):
+    def __init__ (self, parent = None, db=None, table='', tableType=0):
+        QtCore.QThread.__init__(self, parent)
+        self.db = db
+        self.tableName = table
+        self.table = {}
+        self.tableType = tableType
+    def run(self):
+        self.tableName
+        t = self.db.record(self.tableName)
+        self.table = {
+            "TYPE": self.tableType,
+            "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
+            }
+        print "END of: %s" % self.tableName

@@ -5,6 +5,8 @@ import os
 import time
 from random import randint
 from elements import *
+import datetime
+import pyodbc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -34,14 +36,14 @@ class Ui_MainWindow(object):
         # conn tab
         self.vboxlayout.addWidget(self.mainTabs)
         # CONSOLE
-        self.console = QtGui.QLineEdit(self.centralWidget)
-        self.console.setFont(getFont(10))
-        self.console.setObjectName("console")
-
-
-        self.console.setCompleter(self.getConnCompleter())
-
-        self.vboxlayout.addWidget(self.console)
+##        self.console = QtGui.QLineEdit(self.centralWidget)
+##        self.console.setFont(getFont(10))
+##        self.console.setObjectName("console")
+##
+##
+##        self.console.setCompleter(self.getConnCompleter())
+##
+##        self.vboxlayout.addWidget(self.console)
         MainWindow.setCentralWidget(self.centralWidget)
         # MENUBAR
         self.menubar = QtGui.QMenuBar(MainWindow)
@@ -146,9 +148,12 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.openSettingsAction = createAction("Open settings", self, "MainWindow", "Ctrl+Alt+S", self.openSettings, 8)
         self.saveSettingsAction = createAction("Save/Reload settings", self, "MainWindow", "", self.saveSettings, 8)
+        self.importODBCAction = createAction("Import ODBC", self, "MainWindow", "", self.importODBC, 8)
 
         self.settingsMenu.addAction(self.openSettingsAction)
         self.settingsMenu.addAction(self.saveSettingsAction)
+        self.settingsMenu.addSeparator()
+        self.settingsMenu.addAction(self.importODBCAction)
 
         # MENU
         self.menubar.addAction(self.fileMenu.menuAction())
@@ -159,7 +164,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.mainTabs.setCurrentIndex(0)
 
-        QtCore.QObject.connect(self.console, QtCore.SIGNAL("returnPressed()"), self.newConnection)
+        #QtCore.QObject.connect(self.console, QtCore.SIGNAL("returnPressed()"), self.newConnection)
         QtCore.QObject.connect(self.mainTabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.mainTabs.removeTab)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -256,7 +261,16 @@ class Ui_MainWindow(object):
     # NAVIGATE
     # ==== ==== ==== ==== ==== ==== ==== ====
     def toConsole(self):
-        self.console.setFocus()
+        #connections = pyodbc.dataSources().keys()
+        sett = self.loadSettings()
+        connections = sorted(sett.settings['connections'].keys())
+        connection, ok = QtGui.QInputDialog.getItem(self, "Chosse ODBC connections",
+                "Connections:", connections, 0, False)
+        if ok and connection:
+            print connection
+            self.openNewConnection(unicode(connection))
+            #self.itemLabel.setText(item)
+        #self.console.setFocus()
 
     def toSqlEditor(self):
         self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
@@ -310,12 +324,16 @@ class Ui_MainWindow(object):
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
+        print "START executeSql: %s" % datetime.datetime.now()
+        self.saveWorkspace()
+        print "END executeSql: %s" % datetime.datetime.now()
         self.mainTabs.currentWidget().childTabs.currentWidget().execute()
 
     def stopExecuteSql(self):
         self.mainTabs.currentWidget().executeThread.stop()
 
     def executeToFileSql(self):
+        self.saveWorkspace()
         o = QtGui.QFileDialog(self)
         o.setAcceptMode(1)
         QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().childTabs.currentWidget().executeToFile)
@@ -353,10 +371,24 @@ class Ui_MainWindow(object):
         self.mainTabs.setCurrentWidget(settingsTab)
 
     def saveSettings(self):
-        print "saveSettings"
-        self.mainTabs.currentWidget().save()
-        self.sett = self.loadSettings()
-        self.console.setCompleter(self.getConnCompleter())
+        if isinstance(self.mainTabs.currentWidget(), SettingsTab):
+            print "saveSettings"
+            self.mainTabs.currentWidget().save()
+            self.sett = self.loadSettings()
+
+    # use decorator?
+    def importODBC(self):
+        if isinstance(self.mainTabs.currentWidget(), SettingsTab):
+            odbc = pyodbc.dataSources()
+
+            for conn in odbc:
+                if conn not in self.sett.settings['connections']:
+                    settingsEditor = self.mainTabs.currentWidget().editor
+                    s = "    %s:\n" % conn
+                    for i, j in zip(["#type", "#schema", "password"], [odbc[conn], "if_needet", "ENTER_IT"]):
+                        s += "        %s: %s\n" % (i, j)
+                    settingsEditor.setText(settingsEditor.text() + "\n" + s)
+
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # WORKSPACE
@@ -365,19 +397,20 @@ class Ui_MainWindow(object):
         print "saveWorkspace"
         workspace = {}
         for tabIndex in range(self.mainTabs.count()):
-            mainTab = self.mainTabs.widget(tabIndex)
-            childTabs = mainTab.childTabs
-            workspace[mainTab.name] = list()
-            # SqlTabs
-            for sqlTabIndex in range(0, childTabs.count()):
-                sqlTab = childTabs.widget(sqlTabIndex)
-                if sqlTab.saveTo == None:
-                    path = u"files/sql/%s_%s_%s.sql" % (mainTab.name, "".join(map(str, time.localtime()[:3])), randint(0, 100000))
-                else:
-                    path = unicode(sqlTab.saveTo)
+            connTab = self.mainTabs.widget(tabIndex)
+            if isinstance(self.mainTabs.widget(tabIndex), ConnTab):
+                childTabs = connTab.childTabs
+                workspace[connTab.name] = list()
+                # SqlTabs
+                for sqlTabIndex in range(0, childTabs.count()):
+                    sqlTab = childTabs.widget(sqlTabIndex)
+                    if sqlTab.saveTo == None:
+                        path = u"files/sql/%s_%s_%s.sql" % (connTab.name, "".join(map(str, time.localtime()[:3])), randint(0, 1000000))
+                    else:
+                        path = unicode(sqlTab.saveTo)
 
-                sqlTab.saveFile(path)
-                workspace[mainTab.name].append(path)
+                    sqlTab.saveFile(path)
+                    workspace[connTab.name].append(path)
 
         yaml.dump(workspace, open("files/workspace.yaml", "w"))
 
