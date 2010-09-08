@@ -21,50 +21,15 @@ def getFont(size):
     font.setBold(False)
     return font
 
-class testit(Thread):
-    def __init__ (self,db, table, tableType):
-        Thread.__init__(self)
-        self.db = db
-        self.tableName = table
-        self.table = {}
-        self.tableType = tableType
-    def run(self):
-        self.tableName
-        t = self.db.record(self.tableName)
-        self.table = {
-            "TYPE": self.tableType,
-            "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
-            }
-
-class qtestit(QtCore.QThread):
-    def __init__ (self, parent = None, db=None, table='', tableType=0):
-        QtCore.QThread.__init__(self, parent)
-        self.db = db
-        self.tableName = table
-        self.table = {}
-        self.tableType = tableType
-    def run(self):
-        self.tableName
-        t = self.db.record(self.tableName)
-        self.table = {
-            "TYPE": self.tableType,
-            "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
-            }
-        print "END of: %s" % self.tableName
-
-
 
 class SqlTab(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
         super(SqlTab, self).__init__(parent)
         #   sql tab
-        #self.sqlTab = QtGui.QWidget()
-        #self.conn = parent.conn
         self.connTab = parent
         self.alias = {}
 
         self.saveTo = None
-        #self.query = QtSql.QSqlQuery(db=self.conn)
         self.query2 = []
         self.rownum = 0
         self.fetchRowsNum = 0
@@ -132,8 +97,6 @@ class SqlTab(QtGui.QWidget):
         self.splitter.setStretchFactor(1, 2)
         self.horizontalLayout.addWidget(self.splitter)
 
-
-
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userListSelected)
         vertical = self.table.verticalScrollBar()
         QtCore.QObject.connect(vertical, QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
@@ -144,13 +107,11 @@ class SqlTab(QtGui.QWidget):
         self.splitter.setSizes([200, 200])
 
     def expandTable(self):
-        print "expandTable"
         s = self.splitter.sizes()
         s[1] *= 2
         self.splitter.setSizes(s)
 
     def shrinkTable(self):
-        print "shrinkTable"
         s = self.splitter.sizes()
         s[1] /= 2
         self.splitter.setSizes(s)
@@ -180,8 +141,6 @@ class SqlTab(QtGui.QWidget):
     def showColumnAutoComplete(self):
         startTime = time.time()
         sqlparsed = sqlparse.parse(self.getSql().upper())
-        #sqlparsed = self.getSql().upper().split(";")
-        #sqlparsed = [i.strip() for i in sqlparsed]
         print len(self.connTab.catalog.keys())
         words = set(re.split("\s", self.getSql().upper()))
         searchFor = words & set([i.upper() for i in self.connTab.catalog])
@@ -191,8 +150,6 @@ class SqlTab(QtGui.QWidget):
         for sql in sqlparsed:
             if sql.token_first().value == 'SELECT':
                 sqlFrom = " ".join(sql.to_unicode().split("FROM")[1:])
-                #print "*" * 20
-                #print sqlFrom
                 for line in sqlFrom.splitlines():
                     #print "*" * 5
                     for tehAlias in re.findall(regex, line):
@@ -221,10 +178,7 @@ class SqlTab(QtGui.QWidget):
 
             if len(columns) == 0:
                 print "GET columns catalog from DB!"
-                t = self.conn.record(tableName)
-##                t2 = self.connTab.cursor.columns(table=tableName) + self.connTab.cursor.columns(table=tableName.lower())
-
-                #self.connTab.catalog[tableName]["COLUMNS"] = dict([(unicode(t.field(c).name()), (t.field(c).type(), t.field(c).length())) for c in range(len(t))])
+                #t = self.conn.record(tableName)
                 self.connTab.catalog[tableName]["COLUMNS"] = {}
                 for c in self.connTab.cursor.columns(table=tableName):
                     self.connTab.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
@@ -353,8 +307,6 @@ class SqlTab(QtGui.QWidget):
 
     def executeToFile(self, path):
         self.query2 = self.connTab.cursor.execute(self.getSql())
-        self.columnsLen = len(self.query2.description)
-
         o = open(path, "w", 5000)
 
         if self.query2:
@@ -362,14 +314,10 @@ class SqlTab(QtGui.QWidget):
             bazz = u";".join([i[0] for i in self.query2.description])
             o.write(bazz.encode('UTF-8') + u";\n")
 
-            # DATA
-            i = 0
-
             for row in self.query2:
-                print row
+                #print row
                 line = u"%s;\n" % u";".join(map(unicode, row))
                 o.write(line.encode('UTF-8'))
-                i += 1
         o.close()
 
     def maybeFetchMore(self, value):
@@ -378,7 +326,6 @@ class SqlTab(QtGui.QWidget):
         if vertical.value() +  vertical.pageStep() > vertical.maximum() and vertical.maximum() != 0:
             #print "fetchMore", vertical.value() +  vertical.pageStep()
             self.fetchMore()
-
 
     ##>>> pyodbc.Date
     ##<type 'datetime.date'>
@@ -426,9 +373,7 @@ class ConnTab(QtGui.QWidget):
         super(ConnTab, self).__init__(parent)
 
         # SQLITE
-        #self.conn = self.getConnection(connName=connName, **connSettings)
         self.connSettings = connSettings
-        #self.conn.open()
         self.name = connName
         self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
         self.conn2.autocommit = True
@@ -470,8 +415,6 @@ class ConnTab(QtGui.QWidget):
             self.icon = QtGui.QIcon("files/icons/ModifiedIcon.ico")
 
     def getCatalog(self):
-        print "os.path.exists(files/cache/PostgreSQL-mynews.pickle)"
-        print os.path.exists("files/cache/PostgreSQL-mynews.pickle")
         catalog = {}
         if os.path.exists("files/cache/%s.sqlite" % self.name):
             catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
@@ -480,8 +423,6 @@ class ConnTab(QtGui.QWidget):
         print "START CATALOG LOAD: %s" % time.ctime()
 
         for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
-        #for i in map(unicode, self.conn.tables(255)):
-            #print i
             catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
 
 

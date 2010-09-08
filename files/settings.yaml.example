@@ -1,41 +1,7 @@
-# QSQLITE, QMYSQL3, QMYSQL, QODBC3, QODBC, QPSQL7, QPSQL
 # Indentation does matter. Use the same amount of spaces ;) just use copy paste
 
 connections:
-    # SQLITE - should be working
-    TEST_SQLITE:
-        database: files/testDB/db_news.sqlite
-
-    BIG_SQLITE:
-        database: files/testDB/BigTypes.sqlite
-
-    # POSTGRES
-    PG_example:
-        driver: QPSQL
-        host: localhost
-        database: myDatabaseSheme
-        port: 5432
-        user: postgres
-        password: postgres
-
-    # Netezza
-    NZ_example:
-        driver: QODBC
-        database: dbNameInODBC
+    NAME_IN_ODBC:
         password: nzPassword
 
-    # ORACLE
-    ORACLE_example:
-        driver: QODBC
-        database: dbNameInODBC
-        password: oraclePassword
-
-    # MYSQL example
-    MYSQL_example:
-        driver: QMYSQL
-        host: localhost
-        database: mysqldb
-        port: 3306
-        user: mysqldbuser
-        password: mysqldbpassword
 
