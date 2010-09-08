@@ -21,6 +21,115 @@ def getFont(size):
     font.setBold(False)
     return font
 
+def warningMessage(title, message):
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, title, message,
+                    QtGui.QMessageBox.NoButton)
+            msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
+            msgBox.exec_()
+
+
+class FindDialog(QtGui.QDialog):
+    def __init__(self, parent=None):
+        super(FindDialog, self).__init__(parent)
+
+        self.findLabel = QtGui.QLabel("Find &what:")
+        self.findEdit = QtGui.QLineEdit()
+        self.findLabel.setBuddy(self.findEdit)
+
+        self.replaceLabel = QtGui.QLabel("Replace w&ith:")
+        self.replaceEdit = QtGui.QLineEdit()
+        self.replaceLabel.setBuddy(self.replaceEdit)
+
+        caseCheckBox = QtGui.QCheckBox("Match &case")
+        fromStartCheckBox = QtGui.QCheckBox("Search from &start")
+        fromStartCheckBox.setChecked(True)
+
+        findButton = QtGui.QPushButton("&Find")
+        findButton.setDefault(True)
+        QtCore.QObject.connect(findButton, QtCore.SIGNAL("clicked()"), self.findButtonClick)
+
+        replaceButton = QtGui.QPushButton("&Replace")
+        replaceButton.setDefault(True)
+
+        replaceAllButton = QtGui.QPushButton("&Replace All")
+        replaceAllButton.setDefault(True)
+
+        moreButton = QtGui.QPushButton("&More")
+        moreButton.setCheckable(True)
+        moreButton.setAutoDefault(False)
+
+        buttonBox = QtGui.QDialogButtonBox(QtCore.Qt.Vertical)
+        buttonBox.addButton(findButton, QtGui.QDialogButtonBox.ActionRole)
+        buttonBox.addButton(replaceButton, QtGui.QDialogButtonBox.ActionRole)
+        buttonBox.addButton(replaceAllButton, QtGui.QDialogButtonBox.ActionRole)
+        buttonBox.addButton(moreButton, QtGui.QDialogButtonBox.ActionRole)
+
+        extension = QtGui.QWidget()
+
+        wholeWordsCheckBox = QtGui.QCheckBox("&Whole words")
+        backwardCheckBox = QtGui.QCheckBox("Search &backward")
+        searchSelectionCheckBox = QtGui.QCheckBox("Search se&lection")
+
+        moreButton.toggled.connect(extension.setVisible)
+
+        extensionLayout = QtGui.QVBoxLayout()
+        extensionLayout.setMargin(0)
+        extensionLayout.addWidget(wholeWordsCheckBox)
+        extensionLayout.addWidget(backwardCheckBox)
+        extensionLayout.addWidget(searchSelectionCheckBox)
+        extension.setLayout(extensionLayout)
+
+        topLeftLayout = QtGui.QVBoxLayout()
+        topLeftLayout.addWidget(self.findLabel)
+        topLeftLayout.addWidget(self.findEdit)
+        topLeftLayout.addWidget(self.replaceLabel)
+        topLeftLayout.addWidget(self.replaceEdit)
+
+        leftLayout = QtGui.QVBoxLayout()
+        leftLayout.addLayout(topLeftLayout)
+        leftLayout.addWidget(caseCheckBox)
+        leftLayout.addWidget(fromStartCheckBox)
+        leftLayout.addStretch(1)
+
+        mainLayout = QtGui.QGridLayout()
+        mainLayout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
+        mainLayout.addLayout(leftLayout, 0, 0)
+        mainLayout.addWidget(buttonBox, 0, 1)
+        mainLayout.addWidget(extension, 1, 0, 1, 2)
+        self.setLayout(mainLayout)
+
+        self.setWindowTitle("Find and replace")
+        extension.hide()
+
+        self.findFirst = False
+
+    def findButtonClick(self):
+        if self.findFirst == True:
+            print "self.findFirst == True"
+            self.parent().editor.findNext()
+        else:
+
+##            (	const QString & 	expr,
+##bool 	re,
+##bool 	cs,
+##bool 	wo,
+##bool 	wrap,
+##bool 	forward = true,
+##int 	line = -1,
+##int 	index = -1,
+##bool 	show = true
+##)
+            print self.findEdit.text()
+            self.findEdit.text()
+            self.parent().editor.findFirst(str(self.findEdit.text()),
+                            False, False,
+                            False, False,
+                            True, -1, -1,
+                            True)
+            print "findButtonClick"
+            self.findFirst = True
+
+        print self.parent().editor.getCursorPosition()
 
 class SqlTab(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
@@ -249,6 +358,7 @@ class SqlTab(QtGui.QWidget):
 
 
     def execute(self):
+        self.connTab.showToolTip("executing " * 5)
         sql = self.getSql()
         sqlparsed = sqlparse.parse(sql)
         error = False
@@ -260,7 +370,6 @@ class SqlTab(QtGui.QWidget):
             if len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT':
                 try:
                     self.query2 = self.connTab.cursor.execute(self.getSql())
-
                 except:
                     error = True
 
@@ -290,7 +399,6 @@ class SqlTab(QtGui.QWidget):
                         try:
 
                             query = self.connTab.cursor.execute(sql.to_unicode()) #QtSql.QSqlQuery(query=sql.to_unicode(), db=self.conn)
-
                             driverError = dbError = ""
                             status = "OK"
                             rows = query.rowcount
@@ -366,7 +474,13 @@ class SqlTab(QtGui.QWidget):
             self.model.removeRows(self.rownum, self.model.rowCount() - (self.rownum), QtCore.QModelIndex())
             self.table.resizeColumnsToContents()
 
+            self.connTab.showToolTip("Rows: %s" % self.model.rowCount())
+    # ###########################
+    def searchEditor(self):
+        dialog = FindDialog(self)
+        dialog.exec_()
 
+    #def findText(self, )
 
 class ConnTab(QtGui.QWidget):
     def __init__(self, parent=None, connName='', connSettings=None):
@@ -375,9 +489,13 @@ class ConnTab(QtGui.QWidget):
         # SQLITE
         self.connSettings = connSettings
         self.name = connName
-        self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
-        self.conn2.autocommit = True
-        self.cursor = self.conn2.cursor()
+        try:
+            self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
+            self.conn2.autocommit = True
+            self.cursor = self.conn2.cursor()
+        except Exception as exc:
+            self.conn2 = None
+            warningMessage("Error opening connection: %s" % connName, unicode(exc.args))
         # AUTO COMPLETE
         self.loadCatalog()
         self.setIcon()
@@ -458,6 +576,12 @@ class ConnTab(QtGui.QWidget):
             printTable.append(["", "", ""])
         sqlTab.printMessage(printTable)
 
+    def showToolTip(self, text):
+        p = self.pos()
+        p.setX(p.x() + (self.width() / 2))
+        p.setY(p.y() + (self.height() - 10))
+        QtGui.QToolTip.showText(p, text)
+
 
 class SettingsTab(QtGui.QWidget):
     def __init__(self, parent=None, path=None):
@@ -532,6 +656,6 @@ class Settings:
         except IOError, e:
             open(self.settingsFile, "w").write(open("files/%s.%s" % (self.settingsFile, "example")).read())
             self.settings = yaml.load(open(self.settingsFile))
-            return ("Error", "Settings file not found! I have created a settings.yml file in files directory. \nGo edit it or just click Settings button!")
+            return ("Info", "Settings file not found! I have created a settings.yml file in files directory. \nGo edit it or just click Settings button!")
         except ParserError, e:
             return ("Error", "Settings load ERROR. YAML setting file is corrupt!\n %s" % str(e))
