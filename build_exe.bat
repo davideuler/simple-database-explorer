@@ -1,1 +1,1 @@
-python build_exe.py py2exe -b 2
+python build_exe.py py2exe

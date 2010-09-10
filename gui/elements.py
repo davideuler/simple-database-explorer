@@ -306,6 +306,7 @@ class SqlTab(QtGui.QWidget):
                 print "%s: '%s'" % (i, self.alias[i])
             columns = []
 
+        self.editor.setSelection(x, y, x, y)
         if len(columns) > 0:
             self.editor.showUserList(1, sorted(columns))
 
@@ -414,19 +415,31 @@ class SqlTab(QtGui.QWidget):
                 self.printMessage(printTable)
 
     def executeToFile(self, path):
-        self.query2 = self.connTab.cursor.execute(self.getSql())
-        o = open(path, "w", 5000)
+        try:
+            self.query2 = self.connTab.cursor.execute(self.getSql())
+            o = open(path, "w", 5000)
 
-        if self.query2:
-            # HEADER
-            bazz = u";".join([i[0] for i in self.query2.description])
-            o.write(bazz.encode('UTF-8') + u";\n")
+            if self.query2:
+                # HEADER
+                bazz = u";".join([i[0] for i in self.query2.description])
+                o.write(bazz.encode('UTF-8') + u";\n")
 
-            for row in self.query2:
-                #print row
-                line = u"%s;\n" % u";".join(map(unicode, row))
-                o.write(line.encode('UTF-8'))
-        o.close()
+                for row in self.query2:
+                    #print row
+                    line = u"%s;\n" % u";".join(map(unicode, row))
+                    o.write(line.encode('UTF-8'))
+            o.close()
+        except Exception as exc:
+                warningMessage("Error executing to file!", unicode(exc.args))
+
+    def copytoclipbord(self):
+        try:
+            selection = self.table.selectionModel()
+            indexes = selection.selectedIndexes()
+            print indexes
+
+        except Exception as exc:
+                warningMessage("Error copy to clipbord", unicode(exc.args))
 
     def maybeFetchMore(self, value):
         vertical = self.table.verticalScrollBar()
