@@ -20,6 +20,7 @@ class Ui_MainWindow(object):
         icon.addPixmap(QtGui.QPixmap("files/icons/sdbe.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
 
+
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.vboxlayout = QtGui.QVBoxLayout(self.centralWidget)
@@ -97,6 +98,7 @@ class Ui_MainWindow(object):
         self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.executeSql, 8)
         #self.stopExecuteSqlAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopExecuteSql, 8)
         self.executeToFileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executeToFileSql, 8)
+        self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "", self.copytoclipbord, 8)
         self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Alt+J", self.autoComplete, 8)
         self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showColumnAutoComplete, 8)
         self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "Ctrl+Q", self.formatSql, 8)
@@ -106,6 +108,8 @@ class Ui_MainWindow(object):
         self.actionsMenu.addAction(self.executeAction)
         #self.actionsMenu.addAction(self.stopExecuteSqlAction)
         self.actionsMenu.addAction(self.executeToFileAction)
+        self.actionsMenu.addAction(self.copytoclipbordAction)
+
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.autoCompleteAction)
         self.actionsMenu.addAction(self.autoColumnCompleteAction)
@@ -244,56 +248,62 @@ class Ui_MainWindow(object):
 
     def showToolTip(self, text):
         p = self.pos()
-        p.setX(p.x() + (self.width() / 2))
-        p.setY(p.y() + (self.height() - 10))
+        p.setX(p.x() + self.width() - (len(text) * 6) - 8) #self.width() / 3
+        p.setY(p.y() + (self.height() - 8))
         QtGui.QToolTip.showText(p, text)
     # ==== ==== ==== ==== ==== ==== ==== ====
     # FILE HANDLING
     # ==== ==== ==== ==== ==== ==== ==== ====
     def openDialog(self):
-        o = QtGui.QFileDialog(self)
-        QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.newSqlScript)
-        o.setAcceptMode(0)
-        o.open()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            o = QtGui.QFileDialog(self)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.newSqlScript)
+            o.setAcceptMode(0)
+            o.open()
 
     def openFile(self, path):
-        print path
-        childTabs = self.mainTabs.currentWidget().childTabs
-        childTabs.currentWidget().editor.setText(open(path).read())
-        childTabs.currentWidget().saveTo = path
-        childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            print path
+            childTabs = self.mainTabs.currentWidget().childTabs
+            childTabs.currentWidget().editor.setText(open(path).read())
+            childTabs.currentWidget().saveTo = path
+            childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
     def saveDialog(self):
-        sqlTab = self.mainTabs.currentWidget().childTabs.currentWidget()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            sqlTab = self.mainTabs.currentWidget().childTabs.currentWidget()
 
-        if sqlTab.saveTo == None:
-            o = QtGui.QFileDialog(self)
-            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
-            o.setAcceptMode(1)
-            o.open()
-        else:
-            self.saveFile(sqlTab.saveTo)
+            if sqlTab.saveTo == None:
+                o = QtGui.QFileDialog(self)
+                QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
+                o.setAcceptMode(1)
+                o.open()
+            else:
+                self.saveFile(sqlTab.saveTo)
 
     def saveFile(self, s):
-        childTabs = self.mainTabs.currentWidget().childTabs
-        open(s, "w").write(childTabs.currentWidget().editor.text())
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            childTabs = self.mainTabs.currentWidget().childTabs
+            open(s, "w").write(childTabs.currentWidget().editor.text())
 
-        childTabs.currentWidget().saveTo = s
-        childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+            childTabs.currentWidget().saveTo = s
+            childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
-        self.showToolTip("Saved.")
+            self.showToolTip("Saved.")
 
     def saveAsDialog(self):
-        o = QtGui.QFileDialog(self)
-        o.setAcceptMode(1)
-        QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
-        o.open()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            o = QtGui.QFileDialog(self)
+            o.setAcceptMode(1)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
+            o.open()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # EDIT
     # ==== ==== ==== ==== ==== ==== ==== ====
     def searchEditor(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
@@ -311,12 +321,15 @@ class Ui_MainWindow(object):
         #self.console.setFocus()
         self.showToolTip("Connection has been opened.")
 
+
     def toSqlEditor(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
 
      # CONN, SQL
     def leftConnection(self):
-        self.mainTabs.setCurrentIndex(self.mainTabs.currentIndex() - 1)
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.setCurrentIndex(self.mainTabs.currentIndex() - 1)
 
     def rightConnection(self):
         self.mainTabs.setCurrentIndex(self.mainTabs.currentIndex() + 1)
@@ -363,41 +376,52 @@ class Ui_MainWindow(object):
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
-        self.saveWorkspace()
-        startTime = time.time()
-        self.mainTabs.currentWidget().childTabs.currentWidget().execute()
-        #print "Sql execute in %s seconds." % time.time() - startTime
-        self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.saveWorkspace()
+            startTime = time.time()
+            self.mainTabs.currentWidget().childTabs.currentWidget().execute()
+            #print "Sql execute in %s seconds." % time.time() - startTime
+            self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
         self.mainTabs.currentWidget().executeThread.stop()
 
     def executeToFileSql(self):
-        self.saveWorkspace()
-        o = QtGui.QFileDialog(self)
-        o.setAcceptMode(1)
-        QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().childTabs.currentWidget().executeToFile)
-        o.open()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.saveWorkspace()
+            o = QtGui.QFileDialog(self)
+            o.setAcceptMode(1)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().childTabs.currentWidget().executeToFile)
+            o.open()
+
+    def copytoclipbord(self):
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().copytoclipbord()
 
     def autoComplete(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().showAutoComplete()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().showAutoComplete()
 
     def showColumnAutoComplete(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().showColumnAutoComplete()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().showColumnAutoComplete()
 
     def formatSql(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().formatSql()
-        self.showToolTip("Sql has been formated.")
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().formatSql()
+            self.showToolTip("Sql has been formated.")
 
     def reloadCatalogCall(self):
-        startTime = time.time()
-        self.mainTabs.currentWidget().reloadCatalog()
-        self.showToolTip("Catalog has been reloadet in %s seconds for %s tables."
-                            % (round(time.time() - startTime, 4),
-                            len(self.mainTabs.currentWidget().catalog)))
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            startTime = time.time()
+            self.mainTabs.currentWidget().reloadCatalog()
+            self.showToolTip("Catalog has been reloadet in %s seconds for %s tables."
+                                % (round(time.time() - startTime, 4),
+                                len(self.mainTabs.currentWidget().catalog)))
 
     def showCatalogCall(self):
-        self.mainTabs.currentWidget().showCatalog()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().showCatalog()
     # ==== ==== ==== ==== ==== ==== ==== ====
     # SETTINGS
     # ==== ==== ==== ==== ==== ==== ==== ====
