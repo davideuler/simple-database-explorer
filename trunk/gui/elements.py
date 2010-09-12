@@ -109,16 +109,16 @@ class FindDialog(QtGui.QDialog):
             self.parent().editor.findNext()
         else:
 
-##            (	const QString & 	expr,
-##bool 	re,
-##bool 	cs,
-##bool 	wo,
-##bool 	wrap,
-##bool 	forward = true,
-##int 	line = -1,
-##int 	index = -1,
-##bool 	show = true
-##)
+            ##            (	const QString & 	expr,
+            ##bool 	re,
+            ##bool 	cs,
+            ##bool 	wo,
+            ##bool 	wrap,
+            ##bool 	forward = true,
+            ##int 	line = -1,
+            ##int 	index = -1,
+            ##bool 	show = true
+            ##)
             print self.findEdit.text()
             self.findEdit.text()
             self.parent().editor.findFirst(str(self.findEdit.text()),
@@ -161,6 +161,7 @@ class SqlTab(QtGui.QWidget):
         # LINE NUMBERS
         #self.editor.setMarginWidth(0, fm.width( "0000" ) + 2)
         #self.editor.setMarginLineNumbers(2, True)
+        self.editor.setCaretLineVisible(False)
         # Folding visual : we will use boxes
         self.editor.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
         # Braces matching
@@ -168,6 +169,10 @@ class SqlTab(QtGui.QWidget):
         ## Editing line color
         self.editor.setCaretLineVisible(True)
         self.editor.setCaretLineBackgroundColor(QtGui.QColor("#B2EC5D"))
+
+        ## Marker (bookmarks)
+        self.editor.setMarkerBackgroundColor(QtGui.QColor("#663854"))
+        self.editor.setMarkerForegroundColor(QtGui.QColor("#006B3C"))
 
         ## Margins colors
         # line numbers margin
@@ -182,9 +187,13 @@ class SqlTab(QtGui.QWidget):
         self.editor.setIndentationGuides(1)
         self.editor.setIndentationsUseTabs(0)
         self.editor.setAutoCompletionThreshold(2)
+        self.editor.setAutoCompletionCaseSensitivity(False)
+        self.editor.setAutoCompletionReplaceWord(True)
+        self.editor.setAutoCompletionShowSingle(True)
         self.editor.setCallTipsVisible(True)
         self.editor.setAutoCompletionReplaceWord(True)
         self.editor.setUtf8(True)
+        self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
 
         self.table = QtGui.QTableView(self)
         self.table.setSortingEnabled(True)
@@ -359,11 +368,8 @@ class SqlTab(QtGui.QWidget):
 
 
     def execute(self):
-        self.connTab.showToolTip("executing " * 5)
-        sql = self.getSql()
-        sqlparsed = sqlparse.parse(sql)
+        sqlparsed = sqlparse.parse(self.getSql())
         error = False
-        #self.query.finish()
         self.printMessage([["STATUS"], [""]])
 
         if len(sqlparsed) > 0:
@@ -436,7 +442,19 @@ class SqlTab(QtGui.QWidget):
         try:
             selection = self.table.selectionModel()
             indexes = selection.selectedIndexes()
-            print indexes
+
+            columns = indexes[-1].column() - indexes[0].column() + 1
+            rows = len(indexes) / columns
+
+            textTable = [[""] * columns] * rows
+
+            for i, index in enumerate(indexes):
+                #print i, index.row(), i % rows, i / rows
+                textTable[i % rows][i / rows] = unicode(self.model.data(index).toString())
+
+            text = "\n".join(("\t".join(i) for i in textTable))
+            print text
+##            QApplication.clipboard().setText(selected_text);
 
         except Exception as exc:
                 warningMessage("Error copy to clipbord", unicode(exc.args))
@@ -456,7 +474,6 @@ class SqlTab(QtGui.QWidget):
     ##<type 'datetime.time'>
     ##>>> decimal.Decimal
     ##<class 'decimal.Decimal'>
-
     def convertForQt(self, x):
         if isinstance(x, pyodbc.NUMBER) or isinstance(x, pyodbc.ROWID) or isinstance(x, pyodbc.STRING):
             return x
@@ -641,6 +658,8 @@ class SettingsTab(QtGui.QWidget):
         self.editor.setCallTipsVisible(True)
         self.editor.setAutoCompletionReplaceWord(True)
         self.editor.setUtf8(True)
+        self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
+        self.editor.setAnnotationDisplay(Qsci.QsciScintilla.AnnotationHidden)
 
         self.horizontalLayout.addWidget(self.editor)
         self.setLayout(self.horizontalLayout)
