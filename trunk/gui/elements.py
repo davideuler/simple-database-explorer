@@ -11,6 +11,7 @@ import pyodbc
 from decimal import Decimal
 import sqlite3
 import os
+import win32clipboard
 
 def getFont(size):
     font = QtGui.QFont()
@@ -20,6 +21,15 @@ def getFont(size):
     font.setItalic(False)
     font.setBold(False)
     return font
+
+def setClipboard(text):
+    try:
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardText(text)
+        win32clipboard.CloseClipboard()
+    except:
+        print 'Could not copy clipboard data.'
 
 def warningMessage(title, message):
             msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, title, message,
@@ -40,96 +50,126 @@ class FindDialog(QtGui.QDialog):
         self.replaceEdit = QtGui.QLineEdit()
         self.replaceLabel.setBuddy(self.replaceEdit)
 
-        caseCheckBox = QtGui.QCheckBox("Match &case")
-        fromStartCheckBox = QtGui.QCheckBox("Search from &start")
-        fromStartCheckBox.setChecked(True)
+        self.caseCheckBox = QtGui.QCheckBox("Match &case")
+        self.fromStartCheckBox = QtGui.QCheckBox("Search from &start")
+        self.fromStartCheckBox.setChecked(True)
 
-        findButton = QtGui.QPushButton("&Find")
-        findButton.setDefault(True)
-        QtCore.QObject.connect(findButton, QtCore.SIGNAL("clicked()"), self.findButtonClick)
+        self.findButton = QtGui.QPushButton("&Find")
+        self.findButton.setDefault(True)
+        QtCore.QObject.connect(self.findButton, QtCore.SIGNAL("clicked()"), self.findButtonClick)
 
-        replaceButton = QtGui.QPushButton("&Replace")
-        replaceButton.setDefault(True)
+        self.countButton = QtGui.QPushButton("&Count")
+        QtCore.QObject.connect(self.countButton, QtCore.SIGNAL("clicked()"), self.countbuttonclick)
 
-        replaceAllButton = QtGui.QPushButton("&Replace All")
-        replaceAllButton.setDefault(True)
+        self.replaceButton = QtGui.QPushButton("&Replace")
+        QtCore.QObject.connect(self.replaceButton, QtCore.SIGNAL("clicked()"), self.replaceButtonClick)
 
-        moreButton = QtGui.QPushButton("&More")
-        moreButton.setCheckable(True)
-        moreButton.setAutoDefault(False)
+        self.replaceAllButton = QtGui.QPushButton("&Replace All")
+        QtCore.QObject.connect(self.replaceAllButton, QtCore.SIGNAL("clicked()"), self.replaceallclick)
 
-        buttonBox = QtGui.QDialogButtonBox(QtCore.Qt.Vertical)
-        buttonBox.addButton(findButton, QtGui.QDialogButtonBox.ActionRole)
-        buttonBox.addButton(replaceButton, QtGui.QDialogButtonBox.ActionRole)
-        buttonBox.addButton(replaceAllButton, QtGui.QDialogButtonBox.ActionRole)
-        buttonBox.addButton(moreButton, QtGui.QDialogButtonBox.ActionRole)
+        self.moreButton = QtGui.QPushButton("&More")
+        self.moreButton.setCheckable(True)
+        self.moreButton.setAutoDefault(False)
 
-        extension = QtGui.QWidget()
+        self.buttonBox = QtGui.QDialogButtonBox(QtCore.Qt.Vertical)
+        self.buttonBox.addButton(self.findButton, QtGui.QDialogButtonBox.ActionRole)
+        self.buttonBox.addButton(self.countButton, QtGui.QDialogButtonBox.ActionRole)
+        self.buttonBox.addButton(self.replaceButton, QtGui.QDialogButtonBox.ActionRole)
+        self.buttonBox.addButton(self.replaceAllButton, QtGui.QDialogButtonBox.ActionRole)
+        self.buttonBox.addButton(self.moreButton, QtGui.QDialogButtonBox.ActionRole)
 
-        wholeWordsCheckBox = QtGui.QCheckBox("&Whole words")
-        backwardCheckBox = QtGui.QCheckBox("Search &backward")
-        searchSelectionCheckBox = QtGui.QCheckBox("Search se&lection")
+        self.extension = QtGui.QWidget()
 
-        moreButton.toggled.connect(extension.setVisible)
+        self.regexCheckBox = QtGui.QCheckBox("&Regular expression")
+        self.wholeWordsCheckBox = QtGui.QCheckBox("&Whole words")
+        self.backwardCheckBox = QtGui.QCheckBox("Search &backward")
+        self.searchSelectionCheckBox = QtGui.QCheckBox("Search se&lection")
 
-        extensionLayout = QtGui.QVBoxLayout()
-        extensionLayout.setMargin(0)
-        extensionLayout.addWidget(wholeWordsCheckBox)
-        extensionLayout.addWidget(backwardCheckBox)
-        extensionLayout.addWidget(searchSelectionCheckBox)
-        extension.setLayout(extensionLayout)
+        self.moreButton.toggled.connect(self.extension.setVisible)
 
-        topLeftLayout = QtGui.QVBoxLayout()
-        topLeftLayout.addWidget(self.findLabel)
-        topLeftLayout.addWidget(self.findEdit)
-        topLeftLayout.addWidget(self.replaceLabel)
-        topLeftLayout.addWidget(self.replaceEdit)
+        self.extensionLayout = QtGui.QVBoxLayout()
+        self.extensionLayout.setMargin(0)
+        self.extensionLayout.addWidget(self.regexCheckBox)
+        self.extensionLayout.addWidget(self.wholeWordsCheckBox)
+        self.extensionLayout.addWidget(self.backwardCheckBox)
+        self.extensionLayout.addWidget(self.searchSelectionCheckBox)
+        self.extension.setLayout(self.extensionLayout)
 
-        leftLayout = QtGui.QVBoxLayout()
-        leftLayout.addLayout(topLeftLayout)
-        leftLayout.addWidget(caseCheckBox)
-        leftLayout.addWidget(fromStartCheckBox)
-        leftLayout.addStretch(1)
+        self.topLeftLayout = QtGui.QVBoxLayout()
+        self.topLeftLayout.addWidget(self.findLabel)
+        self.topLeftLayout.addWidget(self.findEdit)
+        self.topLeftLayout.addWidget(self.replaceLabel)
+        self.topLeftLayout.addWidget(self.replaceEdit)
 
-        mainLayout = QtGui.QGridLayout()
-        mainLayout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
-        mainLayout.addLayout(leftLayout, 0, 0)
-        mainLayout.addWidget(buttonBox, 0, 1)
-        mainLayout.addWidget(extension, 1, 0, 1, 2)
-        self.setLayout(mainLayout)
+        self.leftLayout = QtGui.QVBoxLayout()
+        self.leftLayout.addLayout(self.topLeftLayout)
+        self.leftLayout.addWidget(self.caseCheckBox)
+        self.leftLayout.addWidget(self.fromStartCheckBox)
+        self.leftLayout.addStretch(1)
+
+        self.mainLayout = QtGui.QGridLayout()
+        self.mainLayout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
+        self.mainLayout.addLayout(self.leftLayout, 0, 0)
+        self.mainLayout.addWidget(self.buttonBox, 0, 1)
+        self.mainLayout.addWidget(self.extension, 1, 0, 1, 2)
+        self.setLayout(self.mainLayout)
 
         self.setWindowTitle("Find and replace")
-        extension.hide()
+        self.extension.hide()
 
         self.findFirst = False
 
     def findButtonClick(self):
-        if self.findFirst == True:
-            print "self.findFirst == True"
-            self.parent().editor.findNext()
-        else:
+        #print "*" * 10
+        #print "forward = %s" % (not self.backwardCheckBox.isChecked())
+        #print self.findEdit.text()
 
-            ##            (	const QString & 	expr,
-            ##bool 	re,
-            ##bool 	cs,
-            ##bool 	wo,
-            ##bool 	wrap,
-            ##bool 	forward = true,
-            ##int 	line = -1,
-            ##int 	index = -1,
-            ##bool 	show = true
-            ##)
-            print self.findEdit.text()
-            self.findEdit.text()
-            self.parent().editor.findFirst(str(self.findEdit.text()),
-                            False, False,
-                            False, False,
-                            True, -1, -1,
-                            True)
-            print "findButtonClick"
-            self.findFirst = True
+        ##(const QString & 	expr,
+        ##bool 	re,
+        ##bool 	cs is true then the search is case sensitive.
+        ##bool 	wo is true then the search looks for whole word matches only,
+        ##bool 	wrap is true then the search wraps around the end of the text.
+        ##bool 	forward = true,
+        ##int 	line = -1,
+        ##int 	index = -1,
+        ##bool 	show is true (the default) then any text found is made visible
+        ##)
+        return self.parent().editor.findFirst(unicode(self.findEdit.text()),
+                        self.regexCheckBox.isChecked(), # re
+                        self.caseCheckBox.isChecked(),
+                        self.wholeWordsCheckBox.isChecked(),
+                        False,
+                        (not self.backwardCheckBox.isChecked()),
+                        -1, -1,
+                        True)
 
-        print self.parent().editor.getCursorPosition()
+    def countbuttonclick(self):
+        self.parent().editor.setCursorPosition(0, 0)
+
+        i = 0
+
+        while self.findButtonClick():
+            i += 1
+
+        print i
+        QtGui.QMessageBox.information(self, "Count", str(i))
+
+
+    def replaceButtonClick(self):
+        #print "*" * 5
+        #print "replaceButtonClick: %s" % unicode(self.replaceEdit.text())
+        self.parent().editor.replace(unicode(self.replaceEdit.text()))
+        return self.findButtonClick()
+
+
+    def replaceallclick(self):
+        print "*" * 5
+        print "replaceallclick: %s" % unicode(self.replaceEdit.text())
+
+        while self.replaceButtonClick():
+            pass
+            #print "replaced..."
+
 
 class SqlTab(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
@@ -446,14 +486,18 @@ class SqlTab(QtGui.QWidget):
             columns = indexes[-1].column() - indexes[0].column() + 1
             rows = len(indexes) / columns
 
-            textTable = [[""] * columns] * rows
+            textTable = [[""] * columns for i in xrange(rows)]
 
             for i, index in enumerate(indexes):
-                #print i, index.row(), i % rows, i / rows
+                #print index.row(), index.column()
+                #print "i:", i, ", row():", index.row(), ", row:", i % rows, ", column:", i / rows
+                #print " =", unicode(self.model.data(index).toString())
                 textTable[i % rows][i / rows] = unicode(self.model.data(index).toString())
+                #print textTable
 
             text = "\n".join(("\t".join(i) for i in textTable))
-            print text
+            setClipboard(text)
+
 ##            QApplication.clipboard().setText(selected_text);
 
         except Exception as exc:
@@ -597,7 +641,7 @@ class ConnTab(QtGui.QWidget):
         columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
         printTable = [columns]
 
-        for table in self.catalog:
+        for table in sorted(self.catalog):
             printTable.append([table, self.catalog[table]["TYPE"], ""])
             columns = self.catalog[table]["COLUMNS"]
             for column in columns:

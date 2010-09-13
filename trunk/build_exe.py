@@ -46,10 +46,6 @@ data_files = [('files', ['files/settings.yaml.example']),
               ('files/testDB', ['files/testDB/db_news.sqlite']),
               ('files/setup', ['files/setup/setup-version.txt',
                                 'files/setup/changelog.txt']),
-              ('sqldrivers', ['files/dll/sqldrivers/qsqlpsql4.dll',
-                             'files/dll/sqldrivers/qsqlodbc4.dll',
-                             'files/dll/sqldrivers/qsqlmysql4.dll',
-                             'files/dll/sqldrivers/qsqlite4.dll']),
               ('imageformats', ['files/dll/imageformats/qico4.dll']),
 			  ('.', ['files/dll/qscintilla2.dll'])]
 
