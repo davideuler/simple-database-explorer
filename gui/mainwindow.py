@@ -193,6 +193,23 @@ class Ui_MainWindow(object):
             msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
             msgBox.exec_()
 
+
+    def isConnTabFunc(self):
+        return isinstance(self.mainTabs.currentWidget(), ConnTab)
+
+    class isConnTab(object):
+        def __init__(self, f):
+            self.f = f
+
+        def __call__(self, *args):
+            print "Entering", self.f.__name__
+            if self.isConnTabFunc():
+                self.f(*args)
+            print "Exited", self.f.__name__
+
+
+
+
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NEW CONN, SQL
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -262,11 +279,13 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # FILE HANDLING
     # ==== ==== ==== ==== ==== ==== ==== ====
+    #@isConnTab
     def openDialog(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             o = QtGui.QFileDialog(self)
             QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.newSqlScript)
             o.setAcceptMode(0)
+            o.setNameFilter("SQL files (*.sql)");
             o.open()
 
     def openFile(self, path):
@@ -285,6 +304,7 @@ class Ui_MainWindow(object):
                 o = QtGui.QFileDialog(self)
                 QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
                 o.setAcceptMode(1)
+                o.setNameFilter("SQL files (*.sql)");
                 o.open()
             else:
                 self.saveFile(sqlTab.saveTo)
@@ -303,6 +323,7 @@ class Ui_MainWindow(object):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             o = QtGui.QFileDialog(self)
             o.setAcceptMode(1)
+            o.setNameFilter("SQL files (*.sql)");
             QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
             o.open()
 
