@@ -98,10 +98,10 @@ class Ui_MainWindow(object):
         self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.executeSql, 8)
         #self.stopExecuteSqlAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopExecuteSql, 8)
         self.executeToFileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executeToFileSql, 8)
-        self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "", self.copytoclipbord, 8)
+        self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
         self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Alt+J", self.autoComplete, 8)
         self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showColumnAutoComplete, 8)
-        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "Ctrl+Q", self.formatSql, 8)
+        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "", self.formatSql, 8)
         self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadCatalogCall, 8)
         self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showCatalogCall, 8)
 
@@ -246,11 +246,19 @@ class Ui_MainWindow(object):
                 print "Error opening file: %s" % path, unicode(exc.args)
                 #self.warningMessage("Error opening file: %s" % path, unicode(exc.args))
 
+        if connTab.childTabs.count() < 2:
+            connTab.childTabs.tabBar().hide()
+        else:
+            connTab.childTabs.tabBar().show()
+
     def showToolTip(self, text):
         p = self.pos()
         p.setX(p.x() + self.width() - (len(text) * 6) - 8) #self.width() / 3
         p.setY(p.y() + (self.height() - 8))
-        QtGui.QToolTip.showText(p, text)
+        t = QtGui.QToolTip
+        t.setFont(getFont(12))
+        t.showText(p, text)
+
     # ==== ==== ==== ==== ==== ==== ==== ====
     # FILE HANDLING
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -397,6 +405,7 @@ class Ui_MainWindow(object):
     def copytoclipbord(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             self.mainTabs.currentWidget().childTabs.currentWidget().copytoclipbord()
+            self.showToolTip("Selection copied.")
 
     def autoComplete(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
@@ -499,13 +508,14 @@ class Ui_MainWindow(object):
                 self.warningMessage("Error at loading workspace!", unicode(exc.args))
                 workspace = list()
 
-            for connName in workspace:
-                try:
-                    self.openNewConnection(connName, False)
-                    for sqlScript in workspace[connName]:
-                        self.newSqlScript(sqlScript)
-                except Exception as exc:
-                    self.warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
+            if workspace != None:
+                for connName in workspace:
+                    try:
+                        self.openNewConnection(connName, False)
+                        for sqlScript in workspace[connName]:
+                            self.newSqlScript(sqlScript)
+                    except Exception as exc:
+                        self.warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
 
     def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
