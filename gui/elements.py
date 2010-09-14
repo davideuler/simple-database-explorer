@@ -495,8 +495,9 @@ class SqlTab(QtGui.QWidget):
                 textTable[i % rows][i / rows] = unicode(self.model.data(index).toString())
                 #print textTable
 
+            headerText = "\t".join((unicode(self.model.headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
             text = "\n".join(("\t".join(i) for i in textTable))
-            setClipboard(text)
+            setClipboard(headerText + "\n" + text)
 
 ##            QApplication.clipboard().setText(selected_text);
 
