@@ -12,6 +12,8 @@ from decimal import Decimal
 import sqlite3
 import os
 import win32clipboard
+from subprocess import Popen
+import subprocess
 
 def getFont(size):
     font = QtGui.QFont()
@@ -37,6 +39,74 @@ def warningMessage(title, message):
             msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
             msgBox.exec_()
 
+class NewConnectionDialog(QtGui.QDialog):
+    def __init__(self, parent=None, settings=None):
+        super(NewConnectionDialog, self).__init__(parent)
+        self.connections = pyodbc.dataSources()
+        self.settings = settings
+
+        self.connectionsComboBox = self.createComboBox()
+        self.fillComboBox()
+        self.connectionsComboBox.setFocus()
+        self.passwordEdit = QtGui.QLineEdit()
+        self.passwordEdit.setEchoMode(QtGui.QLineEdit.Password)
+        self.savePassword = QtGui.QCheckBox("Save password")
+        self.savePassword.setChecked(True)
+        self.odbcManagerButton = self.createButton("&ODBC Manager", self.openODBCManager)
+
+        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.connectionsComboBox.activated.connect(self.setPassword)
+
+        self.mainLayout = QtGui.QGridLayout()
+
+        self.mainLayout.addWidget(QtGui.QLabel("ODBC connection:"), 0, 0)
+        self.mainLayout.addWidget(self.connectionsComboBox, 0, 1)
+        self.mainLayout.addWidget(QtGui.QLabel("Password:"), 1, 0)
+        self.mainLayout.addWidget(self.passwordEdit, 1, 1)
+        self.mainLayout.addWidget(self.savePassword, 2, 1)
+
+        self.mainLayout.addWidget(QtGui.QLabel("Open ODBC manager:"), 3, 0)
+        self.mainLayout.addWidget(self.odbcManagerButton, 3, 1)
+        self.mainLayout.addWidget(self.buttonBox, 4, 1)
+        self.setLayout(self.mainLayout)
+
+        self.setWindowTitle("Open new odbc connection")
+        self.setPassword()
+
+    def setPassword(self):
+        password = self.settings.get(str(self.connectionsComboBox.currentText()), {}).get("password", "")
+        self.passwordEdit.setText(password)
+
+    def openODBCManager(self):
+        try:
+            subprocess.call(["odbcad32.exe"])
+            self.connections = pyodbc.dataSources()
+            self.connectionsComboBox.clear()
+            self.fillComboBox()
+            self.setPassword()
+        except:
+            self.warningMessage("Error", "Could not open ODBC Manager.")
+
+
+    def createComboBox(self):
+            comboBox = QtGui.QComboBox()
+            #comboBox.setEditable(False)
+            comboBox.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                    QtGui.QSizePolicy.Preferred)
+            return comboBox
+
+    def fillComboBox(self):
+        for i in sorted(self.connections.keys()):
+            #self.connectionsComboBox.insertSeparator(1000)
+            self.connectionsComboBox.addItem(i)
+
+    def createButton(self, text, member):
+        button = QtGui.QPushButton(text)
+        button.clicked.connect(member)
+        return button
 
 class FindDialog(QtGui.QDialog):
     def __init__(self, parent=None):
@@ -279,8 +349,8 @@ class SqlTab(QtGui.QWidget):
             sql = self.editor.selectedText()
         else:
             sql = self.editor.text()
-
-        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip()) #.replace("\n\n", " ") \-\-.*\n
+        # remove sql comments
+        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip())
 
     def setSql(self, sql):
         if self.editor.hasSelectedText():
@@ -313,7 +383,6 @@ class SqlTab(QtGui.QWidget):
                     for tehAlias in re.findall(regex, line):
                         tehAlias = re.split("\s|as", tehAlias)
                         self.alias[tehAlias[-1]] = tehAlias[0]
-                        #print "\t", tehAlias
 
         print "COLUMN AUTOCOMPLETE:", time.time() - startTime
 
@@ -321,7 +390,6 @@ class SqlTab(QtGui.QWidget):
         x, y = self.editor.getCursorPosition()
         self.editor.findFirst("[\.\s\n]", True, False, False, False, False, x, y - 1, False)
         x2, y2 = self.editor.getCursorPosition()
-
 
         if x2 < x:
             y2 = 0
@@ -558,14 +626,15 @@ class SqlTab(QtGui.QWidget):
     #def findText(self, )
 
 class ConnTab(QtGui.QWidget):
-    def __init__(self, parent=None, connName='', connSettings=None):
+    def __init__(self, parent=None, connName='', password="", connSettings=None):
         super(ConnTab, self).__init__(parent)
 
         # SQLITE
         self.connSettings = connSettings
         self.name = connName
+
         try:
-            self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.connSettings['password']))
+            self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, password))
             self.conn2.autocommit = True
             self.cursor = self.conn2.cursor()
         except Exception as exc:

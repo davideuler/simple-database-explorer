@@ -6,7 +6,7 @@ import time
 from random import randint
 from elements import *
 import datetime
-import pyodbc
+from pyodbc import dataSources
 from subprocess import Popen
 
 class Ui_MainWindow(object):
@@ -37,15 +37,7 @@ class Ui_MainWindow(object):
         self.mainTabs.setObjectName("mainTabs")
         # conn tab
         self.vboxlayout.addWidget(self.mainTabs)
-        # CONSOLE
-##        self.console = QtGui.QLineEdit(self.centralWidget)
-##        self.console.setFont(getFont(10))
-##        self.console.setObjectName("console")
-##
-##
-##        self.console.setCompleter(self.getConnCompleter())
-##
-##        self.vboxlayout.addWidget(self.console)
+
         MainWindow.setCentralWidget(self.centralWidget)
         # MENUBAR
         self.menubar = QtGui.QMenuBar(MainWindow)
@@ -72,7 +64,7 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.toConsole, 8)
+        self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newConnection, 8)
         self.newSqlAction = createAction("&New &Sql script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
 
         self.openAction = createAction("&Open Sql script", self, "MainWindow", "Ctrl+O", self.openDialog, 8)
@@ -120,7 +112,7 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.toConsole, 8)
+        self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newConnection, 8)
         self.toSqlEditorAction = createAction("&Sql Edit", self, "MainWindow", "Alt+M", self.toSqlEditor, 8)
         self.leftConnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftConnection, 8)
         self.rightConnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightConnection, 8)
@@ -213,23 +205,32 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NEW CONN, SQL
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def getConnCompleter(self):
-        connectionList = self.sett.settings['connections'].keys()
-        completer = QtGui.QCompleter(connectionList)
-        completer.setCaseSensitivity(0)
-        completer.setCompletionMode(1)
-        completer.setModelSorting(2)
-        return completer
-
     def newConnection(self):
-        connName = str(self.console.text())
-        self.console.setText('')
-        self.openNewConnection(connName)
+        self.sett = self.loadSettings()
+        connections = sorted(self.sett.settings['connections'].keys())
 
+        dialog = NewConnectionDialog(self, self.sett.settings['connections'])
+        print "dialog.exec_():", dialog.exec_()
+        print dialog
+##        connection, ok = QtGui.QInputDialog.getItem(self, "Chosse ODBC connections",
+##                "Connections:", connections, 0, False)
+        if dialog.result() == 1:
+            connection = str(dialog.connectionsComboBox.currentText())
+            password = str(dialog.passwordEdit.text())
 
-    def openNewConnection(self, connName, openNewSql=True):
-        connSettings = self.sett.settings['connections'][connName]
-        connTab = ConnTab(connName=connName, connSettings=connSettings)
+            if dialog.savePassword.isChecked():
+                self.sett = self.loadSettings()
+                self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", password)
+                self.sett.settings['connections'][connection]["password"] = password
+                yaml.dump(self.sett.settings, open("settings.yaml", "w"))
+                self.sett = self.loadSettings()
+
+            self.openNewConnection(connection, password)
+            self.showToolTip("Connection has been opened.")
+
+    def openNewConnection(self, connName, password="", openNewSql=True):
+        connSettings = self.sett.settings['connections'].get(connName, {})
+        connTab = ConnTab(connName=connName, password=password, connSettings=connSettings)
         self.mainTabs.addTab(connTab, "")
         self.mainTabs.setTabText(self.mainTabs.indexOf(connTab), QtGui.QApplication.translate("MainWindow", connName, None, QtGui.QApplication.UnicodeUTF8))
         self.mainTabs.setTabIcon(self.mainTabs.indexOf(connTab), connTab.icon)
@@ -242,15 +243,8 @@ class Ui_MainWindow(object):
             self.newSqlScript()
 
     def newSqlScript(self, path=None):
-##        self.statusBar().hideOrShow()
-##        self.statusBar().clearMessage()
-##        self.statusBar().reformat()
-##        self.setStatusBar(None)
-
-
         connTab = self.mainTabs.currentWidget()
         sqlTab = SqlTab(connTab)
-        #childTabs = .childTabs
         connTab.childTabs.addTab(sqlTab, "")
         connTab.childTabs.setTabText(connTab.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", "Sql script", None, QtGui.QApplication.UnicodeUTF8))
         connTab.childTabs.setCurrentWidget(sqlTab)
@@ -260,8 +254,7 @@ class Ui_MainWindow(object):
             try:
                 self.openFile(path)
             except Exception as exc:
-                print "Error opening file: %s" % path, unicode(exc.args)
-                #self.warningMessage("Error opening file: %s" % path, unicode(exc.args))
+                pass #print "Error opening file: %s" % path, unicode(exc.args)
 
         if connTab.childTabs.count() < 2:
             connTab.childTabs.tabBar().hide()
@@ -270,10 +263,10 @@ class Ui_MainWindow(object):
 
     def showToolTip(self, text):
         p = self.pos()
-        p.setX(p.x() + self.width() - (len(text) * 6) - 8) #self.width() / 3
+        p.setX(p.x() + self.width() - (len(text) * 9) - 8)
         p.setY(p.y() + (self.height() - 8))
         t = QtGui.QToolTip
-        t.setFont(getFont(12))
+        t.setFont(getFont(10))
         t.showText(p, text)
 
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -337,20 +330,6 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def toConsole(self):
-        #connections = pyodbc.dataSources().keys()
-        sett = self.loadSettings()
-        connections = sorted(sett.settings['connections'].keys())
-        connection, ok = QtGui.QInputDialog.getItem(self, "Chosse ODBC connections",
-                "Connections:", connections, 0, False)
-        if ok and connection:
-            print connection
-            self.openNewConnection(unicode(connection))
-            #self.itemLabel.setText(item)
-        #self.console.setFocus()
-        self.showToolTip("Connection has been opened.")
-
-
     def toSqlEditor(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
@@ -480,7 +459,7 @@ class Ui_MainWindow(object):
     # use decorator?
     def importODBC(self):
         if isinstance(self.mainTabs.currentWidget(), SettingsTab):
-            odbc = pyodbc.dataSources()
+            odbc = dataSources()
 
             for conn in odbc:
                 if conn not in self.sett.settings['connections']:
@@ -532,7 +511,8 @@ class Ui_MainWindow(object):
             if workspace != None:
                 for connName in workspace:
                     try:
-                        self.openNewConnection(connName, False)
+                        password = self.sett.settings['connections'].get(connName, {}).get("password", "")
+                        self.openNewConnection(connName, password,  False)
                         for sqlScript in workspace[connName]:
                             self.newSqlScript(sqlScript)
                     except Exception as exc:
