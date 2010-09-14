@@ -241,3 +241,22 @@ class qtestit(QtCore.QThread):
             "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
             }
         print "END of: %s" % self.tableName
+
+
+    def getConnCompleter(self):
+        connectionList = self.sett.settings['connections'].keys()
+        completer = QtGui.QCompleter(connectionList)
+        completer.setCaseSensitivity(0)
+        completer.setCompletionMode(1)
+        completer.setModelSorting(2)
+        return completer
+
+        # CONSOLE
+##        self.console = QtGui.QLineEdit(self.centralWidget)
+##        self.console.setFont(getFont(10))
+##        self.console.setObjectName("console")
+##
+##
+##        self.console.setCompleter(self.getConnCompleter())
+##
+##        self.vboxlayout.addWidget(self.console)
