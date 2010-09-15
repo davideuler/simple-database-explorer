@@ -385,10 +385,12 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().setDisabled(True)
             self.saveWorkspace()
             startTime = time.time()
             self.mainTabs.currentWidget().childTabs.currentWidget().execute()
             #print "Sql execute in %s seconds." % time.time() - startTime
+            self.mainTabs.currentWidget().setDisabled(False)
             self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
@@ -464,9 +466,10 @@ class Ui_MainWindow(object):
             for conn in odbc:
                 if conn not in self.sett.settings['connections']:
                     settingsEditor = self.mainTabs.currentWidget().editor
-                    s = "    %s:  #[%s]\n" % (conn, odbc[conn])
-                    for i, j in zip(["#schema", "password"], ["if_needet", "ENTER_IT"]):
-                        s += "        %s: %s\n" % (i, j)
+##                    s = "    %s:  #[%s]\n" % (conn, odbc[conn])
+##                    for i, j in zip(["#schema", "password"], ["if_needet", "ENTER_IT"]):
+##                        s += "        %s: %s\n" % (i, j)
+                    s = "  %s: {password: ENTER_IT}" % (conn)
                     settingsEditor.setText(settingsEditor.text() + "\n" + s)
 
     def openODBCManager(self):
