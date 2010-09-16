@@ -299,14 +299,28 @@ class SqlTab(QtGui.QWidget):
         self.editor.setIndentationWidth(4)
         self.editor.setIndentationGuides(1)
         self.editor.setIndentationsUseTabs(0)
-        self.editor.setAutoCompletionThreshold(2)
+
+
+        self.editor.setAutoCompletionThreshold(-1)
+        self.editor.setAutoCompletionSource(Qsci.QsciScintilla.AcsAll)
+        self.editor.setAutoIndent(True)
         self.editor.setAutoCompletionCaseSensitivity(False)
         self.editor.setAutoCompletionReplaceWord(True)
         self.editor.setAutoCompletionShowSingle(True)
-        self.editor.setCallTipsVisible(True)
+        self.editor.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
+        self.editor.setCallTipsVisible(False)
         self.editor.setAutoCompletionReplaceWord(True)
         self.editor.setUtf8(True)
         self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
+
+##        self.sqlLexer = Qsci.QsciLexerSQL(self.editor)
+##        self.api = Qsci.QsciAPIs(self.sqlLexer)
+##        self.api.add(QtCore.QString("TABLE1"))
+##        self.api.add(QtCore.QString("TABLE2"))
+##        self.api.add(QtCore.QString("TABLE1.DF"))
+##        self.api.prepare()
+##        self.sqlLexer.setAPIs(self.api)
+##        self.editor.setLexer(self.sqlLexer)
 
         self.table = QtGui.QTableView(self)
         self.table.setSortingEnabled(True)
@@ -331,11 +345,17 @@ class SqlTab(QtGui.QWidget):
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userListSelected)
         vertical = self.table.verticalScrollBar()
         QtCore.QObject.connect(vertical, QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
-        #shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, None, self.copytoclipbord)
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, self.copytoclipbord)
         #shortcut2 = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.editor, None, self.showAutoComplete)
         #QtCore.QObject.connect(self.shortcut, QtCore.SIGNAL("activatedAmbiguously()"), self.copytoclipbord)
         #QtCore.QObject.connect(self.shortcut2, QtCore.SIGNAL("activatedAmbiguously()"), self.showAutoComplete)
         self.setLayout(self.horizontalLayout)
+
+        self.newAction = QtGui.QAction("Copy table selection", self,
+                shortcut="Ctrl+W", triggered=self.copyTable)
+
+    def copyTable(self):
+        print "dflkj"
 
     def defaultStretch(self):
         self.splitter.setSizes([200, 200])
@@ -367,7 +387,12 @@ class SqlTab(QtGui.QWidget):
             self.editor.setText(sql)
 
     def formatSql(self):
-        sql = sqlparse.format(self.getSql(), reindent=True, keyword_case='upper')
+        if self.editor.hasSelectedText():
+            text = self.findSelection()
+            sql = sqlparse.format(text, reindent=True, keyword_case='upper')
+            self.editor.replace(sql)
+
+
         print sql
 
         self.setSql(sql)
@@ -434,6 +459,9 @@ class SqlTab(QtGui.QWidget):
             self.editor.showUserList(1, sorted(columns))
 
     def showAutoComplete(self):
+        #print "dfsdf"
+        #self.editor.callTip()
+
         line, index = self.editor.getCursorPosition()
         self.editor.setSelection(line, index - 1, line, index)
         if self.editor.hasSelectedText():
@@ -501,6 +529,7 @@ class SqlTab(QtGui.QWidget):
             # is select
             if len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT':
                 try:
+
                     self.query2 = self.connTab.cursor.execute(self.getSql())
                 except:
                     error = True
@@ -563,19 +592,28 @@ class SqlTab(QtGui.QWidget):
         except Exception as exc:
                 warningMessage("Error executing to file!", unicode(exc.args))
 
+    def findSelection(self):
+        text = unicode(self.editor.selectedText())
+        s =  self.editor.getSelection()
+        self.editor.findFirst(text, False, False, False, False, True, s[0], s[1], True)
+        return text
+
     def comment(self):
         if self.editor.hasSelectedText():
-            text = unicode(self.editor.selectedText())
-            print text
-            s =  self.editor.getSelection()
-            print self.editor.findFirst(text, False, False, False, False, True, s[0], s[1], True)
+            text = self.findSelection()
 
             if len([i for i in text.splitlines() if i.startswith("--")]) == len(text.splitlines()):
                 self.editor.replace("\n".join([i[2:] for i in text.splitlines()]))
             else:
                 self.editor.replace("--" + "\n--".join(text.splitlines()))
 
+    def joinlines(self):
+        if self.editor.hasSelectedText():
+            text = self.findSelection()
+            self.editor.replace(re.sub("\n|\r", " ", text))
+
     def copytoclipbord(self):
+        print "copytoclipbord"
         try:
             if self.table.hasFocus():
                 selection = self.table.selectionModel()
