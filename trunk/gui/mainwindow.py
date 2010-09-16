@@ -81,31 +81,37 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
+        self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
         self.searchEditorAction = createAction("&Find", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
+        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "", self.formatSql, 8)
+        self.commentAction = createAction("&Comment", self, "MainWindow", "Ctrl+B", self.comment, 8)
 
+        self.editMenu.addAction(self.copyAction)
+        self.editMenu.addSeparator()
         self.editMenu.addAction(self.searchEditorAction)
+        self.editMenu.addAction(self.formatSqlAction)
+        self.editMenu.addAction(self.commentAction)
+
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.executeSql, 8)
         #self.stopExecuteSqlAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopExecuteSql, 8)
         self.executeToFileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executeToFileSql, 8)
-        self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
+        #self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
         self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Alt+J", self.autoComplete, 8)
         self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showColumnAutoComplete, 8)
-        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "", self.formatSql, 8)
         self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadCatalogCall, 8)
         self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showCatalogCall, 8)
 
         self.actionsMenu.addAction(self.executeAction)
         #self.actionsMenu.addAction(self.stopExecuteSqlAction)
         self.actionsMenu.addAction(self.executeToFileAction)
-        self.actionsMenu.addAction(self.copytoclipbordAction)
+        #self.actionsMenu.addAction(self.copytoclipbordAction)
 
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.autoCompleteAction)
         self.actionsMenu.addAction(self.autoColumnCompleteAction)
-        self.actionsMenu.addAction(self.formatSqlAction)
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.reloadCatalogAction)
         self.actionsMenu.addAction(self.showCatalogAction)
@@ -179,6 +185,8 @@ class Ui_MainWindow(object):
         #self.statusBar().showMessage('Ready', 2000)
         #self.setToolTip(QtGui.QToolTip())
 
+
+
     def warningMessage(self, title, message):
             msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, title, message,
                     QtGui.QMessageBox.NoButton, self)
@@ -198,8 +206,6 @@ class Ui_MainWindow(object):
             if self.isConnTabFunc():
                 self.f(*args)
             print "Exited", self.f.__name__
-
-
 
 
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -323,6 +329,15 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # EDIT
     # ==== ==== ==== ==== ==== ==== ==== ====
+    def copy(self):
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().copytoclipbord()
+            self.showToolTip("Copied.")
+
+    def comment(self):
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().comment()
+
     def searchEditor(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
@@ -385,12 +400,12 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().setDisabled(True)
+            #self.mainTabs.currentWidget().setDisabled(True)
             self.saveWorkspace()
             startTime = time.time()
             self.mainTabs.currentWidget().childTabs.currentWidget().execute()
             #print "Sql execute in %s seconds." % time.time() - startTime
-            self.mainTabs.currentWidget().setDisabled(False)
+            #self.mainTabs.currentWidget().setDisabled(False)
             self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
