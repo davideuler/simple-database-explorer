@@ -99,7 +99,7 @@ class Ui_MainWindow(object):
         #self.stopExecuteSqlAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopExecuteSql, 8)
         self.executeToFileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executeToFileSql, 8)
         #self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
-        self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Alt+J", self.autoComplete, 8)
+        self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Ctrl+Space", self.autoComplete, 8)
         self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showColumnAutoComplete, 8)
         self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadCatalogCall, 8)
         self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showCatalogCall, 8)
@@ -111,7 +111,7 @@ class Ui_MainWindow(object):
 
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.autoCompleteAction)
-        self.actionsMenu.addAction(self.autoColumnCompleteAction)
+        #self.actionsMenu.addAction(self.autoColumnCompleteAction)
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.reloadCatalogAction)
         self.actionsMenu.addAction(self.showCatalogAction)

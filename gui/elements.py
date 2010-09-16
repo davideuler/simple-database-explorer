@@ -46,6 +46,9 @@ class NewConnectionDialog(QtGui.QDialog):
         self.settings = settings
 
         self.connectionsComboBox = self.createComboBox()
+        self.connectionsComboBox.setAutoCompletion(True)
+        self.connectionsComboBox.setAutoCompletionCaseSensitivity(True)
+        self.connectionsComboBox.setFont(getFont(14))
         self.fillComboBox()
         self.connectionsComboBox.setFocus()
         self.passwordEdit = QtGui.QLineEdit()
@@ -431,7 +434,18 @@ class SqlTab(QtGui.QWidget):
             self.editor.showUserList(1, sorted(columns))
 
     def showAutoComplete(self):
-        self.editor.showUserList(1, sorted(self.connTab.catalog.keys()))
+        line, index = self.editor.getCursorPosition()
+        self.editor.setSelection(line, index - 1, line, index)
+        if self.editor.hasSelectedText():
+            text = unicode(self.editor.selectedText())
+            if text == ".":
+                self.editor.setCursorPosition(line, index)
+                print "COLUMN!!"
+                self.showColumnAutoComplete()
+                return True
+
+        self.editor.setCursorPosition(line, index)
+        self.editor.showUserList(4, sorted(self.connTab.catalog.keys()))
 
     def userListSelected(self, i, s):
         print i, s
