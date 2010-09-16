@@ -81,16 +81,19 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
+        #self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
         self.searchEditorAction = createAction("&Find", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
         self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "", self.formatSql, 8)
         self.commentAction = createAction("&Comment", self, "MainWindow", "Ctrl+B", self.comment, 8)
+        self.joinlinesAction = createAction("&Join Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
 
-        self.editMenu.addAction(self.copyAction)
+        #self.editMenu.addAction(self.copyAction)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.searchEditorAction)
         self.editMenu.addAction(self.formatSqlAction)
         self.editMenu.addAction(self.commentAction)
+        self.editMenu.addSeparator()
+        self.editMenu.addAction(self.joinlinesAction)
 
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
@@ -118,7 +121,7 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newConnection, 8)
+        #self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newConnection, 8)
         self.toSqlEditorAction = createAction("&Sql Edit", self, "MainWindow", "Alt+M", self.toSqlEditor, 8)
         self.leftConnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftConnection, 8)
         self.rightConnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightConnection, 8)
@@ -135,7 +138,7 @@ class Ui_MainWindow(object):
         self.shrinkTableAction = createAction("Shrink Table", self, "MainWindow", "Alt+-", self.shrinkTableCall, 8)
 
 
-        self.navigateMenu.addAction(self.toConsoleAction)
+        #self.navigateMenu.addAction(self.toConsoleAction)
         self.navigateMenu.addAction(self.toSqlEditorAction)
         self.navigateMenu.addSeparator()
         self.navigateMenu.addAction(self.leftConnectionAction)
@@ -342,6 +345,10 @@ class Ui_MainWindow(object):
     def searchEditor(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
+
+    def joinlines(self):
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().joinlines()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
