@@ -336,6 +336,7 @@ class Ui_MainWindow(object):
 
     def comment(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            print "main.comment"
             self.mainTabs.currentWidget().childTabs.currentWidget().comment()
 
     def searchEditor(self):
