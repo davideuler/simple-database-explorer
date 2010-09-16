@@ -328,7 +328,10 @@ class SqlTab(QtGui.QWidget):
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userListSelected)
         vertical = self.table.verticalScrollBar()
         QtCore.QObject.connect(vertical, QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
-
+        #shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, None, self.copytoclipbord)
+        #shortcut2 = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.editor, None, self.showAutoComplete)
+        #QtCore.QObject.connect(self.shortcut, QtCore.SIGNAL("activatedAmbiguously()"), self.copytoclipbord)
+        #QtCore.QObject.connect(self.shortcut2, QtCore.SIGNAL("activatedAmbiguously()"), self.showAutoComplete)
         self.setLayout(self.horizontalLayout)
 
     def defaultStretch(self):
@@ -546,28 +549,41 @@ class SqlTab(QtGui.QWidget):
         except Exception as exc:
                 warningMessage("Error executing to file!", unicode(exc.args))
 
+    def comment(self):
+        if self.editor.hasSelectedText():
+            text = unicode(self.editor.selectedText())
+            print text
+            s =  self.editor.getSelection()
+            print self.editor.findFirst(text, False, False, False, False, True, s[0], s[1], True)
+
+            if len([i for i in text.splitlines() if i.startswith("--")]) == len(text.splitlines()):
+                self.editor.replace("\n".join([i[2:] for i in text.splitlines()]))
+            else:
+                self.editor.replace("--" + "\n--".join(text.splitlines()))
+
     def copytoclipbord(self):
         try:
-            selection = self.table.selectionModel()
-            indexes = selection.selectedIndexes()
+            if self.table.hasFocus():
+                selection = self.table.selectionModel()
+                indexes = selection.selectedIndexes()
 
-            columns = indexes[-1].column() - indexes[0].column() + 1
-            rows = len(indexes) / columns
+                columns = indexes[-1].column() - indexes[0].column() + 1
+                rows = len(indexes) / columns
 
-            textTable = [[""] * columns for i in xrange(rows)]
+                textTable = [[""] * columns for i in xrange(rows)]
 
-            for i, index in enumerate(indexes):
-                #print index.row(), index.column()
-                #print "i:", i, ", row():", index.row(), ", row:", i % rows, ", column:", i / rows
-                #print " =", unicode(self.model.data(index).toString())
-                textTable[i % rows][i / rows] = unicode(self.model.data(index).toString())
-                #print textTable
+                for i, index in enumerate(indexes):
+                    #print index.row(), index.column()
+                    #print "i:", i, ", row():", index.row(), ", row:", i % rows, ", column:", i / rows
+                    #print " =", unicode(self.model.data(index).toString())
+                    textTable[i % rows][i / rows] = unicode(self.model.data(index).toString())
+                    #print textTable
 
-            headerText = "\t".join((unicode(self.model.headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
-            text = "\n".join(("\t".join(i) for i in textTable))
-            setClipboard(headerText + "\n" + text)
-
-##            QApplication.clipboard().setText(selected_text);
+                headerText = "\t".join((unicode(self.model.headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
+                text = "\n".join(("\t".join(i) for i in textTable))
+                setClipboard(headerText + "\n" + text)
+            else:
+                self.editor.copy()
 
         except Exception as exc:
                 warningMessage("Error copy to clipbord", unicode(exc.args))
