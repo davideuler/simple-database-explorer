@@ -295,33 +295,35 @@ class SqlTab(QtGui.QWidget):
         # folding margin colors (foreground,background)
         self.editor.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
 
-        self.editor.setAutoIndent(1)
+        self.editor.setAutoIndent(True)
         self.editor.setIndentationWidth(4)
         self.editor.setIndentationGuides(1)
         self.editor.setIndentationsUseTabs(0)
 
-
-        self.editor.setAutoCompletionThreshold(-1)
-        self.editor.setAutoCompletionSource(Qsci.QsciScintilla.AcsAll)
-        self.editor.setAutoIndent(True)
-        self.editor.setAutoCompletionCaseSensitivity(False)
-        self.editor.setAutoCompletionReplaceWord(True)
-        self.editor.setAutoCompletionShowSingle(True)
         self.editor.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
         self.editor.setCallTipsVisible(False)
-        self.editor.setAutoCompletionReplaceWord(True)
         self.editor.setUtf8(True)
         self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
 
-##        self.sqlLexer = Qsci.QsciLexerSQL(self.editor)
-##        self.api = Qsci.QsciAPIs(self.sqlLexer)
-##        self.api.add(QtCore.QString("TABLE1"))
-##        self.api.add(QtCore.QString("TABLE2"))
-##        self.api.add(QtCore.QString("TABLE1.DF"))
-##        self.api.prepare()
-##        self.sqlLexer.setAPIs(self.api)
-##        self.editor.setLexer(self.sqlLexer)
+        self.sqlLexer = Qsci.QsciLexerSQL(self.editor)
+        self.api = Qsci.QsciAPIs(self.sqlLexer)
+        self.api.add(QtCore.QString("SELECT\t*\nFROM\t"))
+        self.api.add(QtCore.QString("UPDATE\t_\nSET\t\t"))
+        self.api.add(QtCore.QString("INSERT\tINTO\t_\nVALUES\t"))
+        self.api.add(QtCore.QString("CREATE\tTABLE\t"))
+        self.api.add(QtCore.QString("CREATE\tVIEW\t"))
+        self.api.add("www simple database explore")
+        self.api.prepare()
+        self.sqlLexer.setAPIs(self.api)
+        self.editor.setLexer(self.sqlLexer)
 
+        self.editor.setAutoCompletionThreshold(2)
+        self.editor.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
+        self.editor.setAutoCompletionCaseSensitivity(False)
+        #self.editor.setAutoCompletionReplaceWord(True)
+        #self.editor.setAutoCompletionShowSingle(True)
+
+        # ===============================================
         self.table = QtGui.QTableView(self)
         self.table.setSortingEnabled(True)
         self.table.setFont(getFont(8))
@@ -346,9 +348,6 @@ class SqlTab(QtGui.QWidget):
         vertical = self.table.verticalScrollBar()
         QtCore.QObject.connect(vertical, QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, self.copytoclipbord)
-        #shortcut2 = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.editor, None, self.showAutoComplete)
-        #QtCore.QObject.connect(self.shortcut, QtCore.SIGNAL("activatedAmbiguously()"), self.copytoclipbord)
-        #QtCore.QObject.connect(self.shortcut2, QtCore.SIGNAL("activatedAmbiguously()"), self.showAutoComplete)
         self.setLayout(self.horizontalLayout)
 
         self.newAction = QtGui.QAction("Copy table selection", self,
@@ -459,18 +458,15 @@ class SqlTab(QtGui.QWidget):
             self.editor.showUserList(1, sorted(columns))
 
     def showAutoComplete(self):
-        #print "dfsdf"
-        #self.editor.callTip()
-
+        # check if user want colomn help. if he typed "." before.
         line, index = self.editor.getCursorPosition()
         self.editor.setSelection(line, index - 1, line, index)
         if self.editor.hasSelectedText():
             text = unicode(self.editor.selectedText())
             if text == ".":
                 self.editor.setCursorPosition(line, index)
-                print "COLUMN!!"
                 self.showColumnAutoComplete()
-                return True
+                return
 
         self.editor.setCursorPosition(line, index)
         self.editor.showUserList(4, sorted(self.connTab.catalog.keys()))
@@ -753,7 +749,9 @@ class ConnTab(QtGui.QWidget):
         print "START CATALOG LOAD: %s" % time.ctime()
 
         for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
-            catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
+            #print i
+            if i.table_name != None:
+                catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
 
 
         print "END CATALOG LOAD: %s" % time.ctime()
