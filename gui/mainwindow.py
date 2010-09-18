@@ -65,13 +65,16 @@ class Ui_MainWindow(object):
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newConnection, 8)
-        self.newSqlAction = createAction("&New &Sql script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
+        self.recentAction = createAction("Recent", self, "MainWindow", "", self.recent, 8)
 
+        self.newSqlAction = createAction("&New &Sql script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
         self.openAction = createAction("&Open Sql script", self, "MainWindow", "Ctrl+O", self.openDialog, 8)
         self.saveAction = createAction("&Save Sql script", self, "MainWindow", "Ctrl+S", self.saveDialog, 8)
         self.saveAsAction = createAction("&Save As Sql script", self, "MainWindow", "Ctrl+Shift+S", self.saveAsDialog, 8)
 
         self.fileMenu.addAction(self.newConnAction)
+        self.fileMenu.addSeparator()
+        self.fileMenu.addAction(self.recentAction)
         self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.newSqlAction)
         self.fileMenu.addAction(self.openAction)
@@ -180,22 +183,12 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.mainTabs.setCurrentIndex(0)
 
-        #QtCore.QObject.connect(self.console, QtCore.SIGNAL("returnPressed()"), self.newConnection)
         QtCore.QObject.connect(self.mainTabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.mainTabs.removeTab)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
         self.openWorkspace()
         #self.statusBar().showMessage('Ready', 2000)
         #self.setToolTip(QtGui.QToolTip())
-
-
-
-    def warningMessage(self, title, message):
-            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, title, message,
-                    QtGui.QMessageBox.NoButton, self)
-            msgBox.addButton("&Continue", QtGui.QMessageBox.RejectRole)
-            msgBox.exec_()
-
 
     def isConnTabFunc(self):
         return isinstance(self.mainTabs.currentWidget(), ConnTab)
@@ -219,10 +212,7 @@ class Ui_MainWindow(object):
         connections = sorted(self.sett.settings['connections'].keys())
 
         dialog = NewConnectionDialog(self, self.sett.settings['connections'])
-        print "dialog.exec_():", dialog.exec_()
-        print dialog
-##        connection, ok = QtGui.QInputDialog.getItem(self, "Chosse ODBC connections",
-##                "Connections:", connections, 0, False)
+        dialog.exec_()
         if dialog.result() == 1:
             connection = str(dialog.connectionsComboBox.currentText())
             password = str(dialog.passwordEdit.text())
@@ -234,7 +224,8 @@ class Ui_MainWindow(object):
                 yaml.dump(self.sett.settings, open("settings.yaml", "w"))
                 self.sett = self.loadSettings()
 
-            self.openNewConnection(connection, password)
+            connTab = self.openNewConnection(connection, password, False)
+            connTab.openWorkspace()
             self.showToolTip("Connection has been opened.")
 
     def openNewConnection(self, connName, password="", openNewSql=True):
@@ -251,24 +242,23 @@ class Ui_MainWindow(object):
         if openNewSql:
             self.newSqlScript()
 
+        return connTab
+
+    def recent(self):
+        tab = self.mainTabs.currentWidget()
+        if isinstance(tab, ConnTab):
+            if os.path.exists("files/cache/%s_recent.txt" % tab.name):
+                files = open("files/cache/%s_recent.txt" % tab.name).read().splitlines()
+                item, ok = QtGui.QInputDialog.getItem(self, "Select a recent file...",
+                    "Recent:", list(reversed(files)), 0, False)
+
+                if ok and item:
+                    self.mainTabs.currentWidget().newSqlScript(item)
+                    #self.openFile(item)
+
     def newSqlScript(self, path=None):
-        connTab = self.mainTabs.currentWidget()
-        sqlTab = SqlTab(connTab)
-        connTab.childTabs.addTab(sqlTab, "")
-        connTab.childTabs.setTabText(connTab.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", "Sql script", None, QtGui.QApplication.UnicodeUTF8))
-        connTab.childTabs.setCurrentWidget(sqlTab)
-        self.toSqlEditor()
-
-        if path != None:
-            try:
-                self.openFile(path)
-            except Exception as exc:
-                pass #print "Error opening file: %s" % path, unicode(exc.args)
-
-        if connTab.childTabs.count() < 2:
-            connTab.childTabs.tabBar().hide()
-        else:
-            connTab.childTabs.tabBar().show()
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().newSqlScript()
 
     def showToolTip(self, text):
         p = self.pos()
@@ -285,7 +275,7 @@ class Ui_MainWindow(object):
     def openDialog(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             o = QtGui.QFileDialog(self)
-            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.newSqlScript)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().newSqlScript)
             o.setAcceptMode(0)
             o.setNameFilter("SQL files (*.sql)");
             o.open()
@@ -293,10 +283,7 @@ class Ui_MainWindow(object):
     def openFile(self, path):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             print path
-            childTabs = self.mainTabs.currentWidget().childTabs
-            childTabs.currentWidget().editor.setText(open(path).read())
-            childTabs.currentWidget().saveTo = path
-            childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+            self.mainTabs.currentWidget().openFile(path)
 
     def saveDialog(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
@@ -408,12 +395,9 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executeSql(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            #self.mainTabs.currentWidget().setDisabled(True)
             self.saveWorkspace()
             startTime = time.time()
             self.mainTabs.currentWidget().childTabs.currentWidget().execute()
-            #print "Sql execute in %s seconds." % time.time() - startTime
-            #self.mainTabs.currentWidget().setDisabled(False)
             self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
@@ -464,7 +448,7 @@ class Ui_MainWindow(object):
         message = sett.load()
 
         if message[0] == "Error":
-            self.warningMessage("Settings load ERROR.", message[1])
+            warningMessage("Settings load ERROR.", message[1])
         return sett
 
     def openSettings(self):
@@ -499,29 +483,19 @@ class Ui_MainWindow(object):
         try:
             Popen(["odbcad32.exe"])
         except:
-            self.warningMessage("Error", "Could not open ODBC Manager.")
+            warningMessage("Error", "Could not open ODBC Manager.")
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # WORKSPACE
     # ==== ==== ==== ==== ==== ==== ==== ====
     def saveWorkspace(self):
         print "saveWorkspace"
-        workspace = {}
+        workspace = []
         for tabIndex in range(self.mainTabs.count()):
-            connTab = self.mainTabs.widget(tabIndex)
-            if isinstance(self.mainTabs.widget(tabIndex), ConnTab):
-                childTabs = connTab.childTabs
-                workspace[connTab.name] = list()
-                # SqlTabs
-                for sqlTabIndex in range(0, childTabs.count()):
-                    sqlTab = childTabs.widget(sqlTabIndex)
-                    if sqlTab.saveTo == None:
-                        path = u"files/sql/%s_%s_%s.sql" % (connTab.name, "".join(map(str, time.localtime()[:3])), randint(0, 1000000))
-                    else:
-                        path = unicode(sqlTab.saveTo)
-
-                    sqlTab.saveFile(path)
-                    workspace[connTab.name].append(path)
+            tab = self.mainTabs.widget(tabIndex)
+            if isinstance(tab, ConnTab):
+                tab.saveWorkspace()
+                workspace.append(tab.name)
 
         yaml.dump(workspace, open("files/workspace.yaml", "w"))
 
@@ -531,18 +505,18 @@ class Ui_MainWindow(object):
             try:
                 workspace = yaml.load(open("files/workspace.yaml"))
             except Exception as exc:
-                self.warningMessage("Error at loading workspace!", unicode(exc.args))
+                warningMessage("Error at loading workspace!", unicode(exc.args))
                 workspace = list()
 
             if workspace != None:
                 for connName in workspace:
                     try:
                         password = self.sett.settings['connections'].get(connName, {}).get("password", "")
-                        self.openNewConnection(connName, password,  False)
-                        for sqlScript in workspace[connName]:
-                            self.newSqlScript(sqlScript)
+                        connTab = self.openNewConnection(connName, password,  False)
+                        connTab.openWorkspace()
+
                     except Exception as exc:
-                        self.warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
+                        warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
 
     def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"

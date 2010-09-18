@@ -13,6 +13,8 @@ import sqlite3
 import os
 from subprocess import Popen
 import subprocess
+from sqlkeywords import keywords
+from random import randint
 
 def getFont(size):
     font = QtGui.QFont()
@@ -115,11 +117,11 @@ class FindDialog(QtGui.QDialog):
         super(FindDialog, self).__init__(parent)
 
         self.findLabel = QtGui.QLabel("Find &what:")
-        self.findEdit = QtGui.QLineEdit()
+        self.findEdit = self.createComboBox()
         self.findLabel.setBuddy(self.findEdit)
 
         self.replaceLabel = QtGui.QLabel("Replace w&ith:")
-        self.replaceEdit = QtGui.QLineEdit()
+        self.replaceEdit = self.createComboBox()
         self.replaceLabel.setBuddy(self.replaceEdit)
 
         self.caseCheckBox = QtGui.QCheckBox("Match &case")
@@ -190,8 +192,35 @@ class FindDialog(QtGui.QDialog):
         self.extension.hide()
 
         self.findFirst = False
+        self.openhistory()
+
+    def createComboBox(self):
+            comboBox = QtGui.QComboBox()
+            comboBox.setEditable(True)
+            comboBox.setSizePolicy(QtGui.QSizePolicy.Expanding,
+                    QtGui.QSizePolicy.Preferred)
+            comboBox.setMinimumWidth(300)
+            return comboBox
+
+    def openhistory(self):
+        if os.path.exists("files/cache/find_history.txt"):
+            self.findEdit.addItems(open("files/cache/find_history.txt").read().splitlines())
+        else:
+            open("files/cache/find_history.txt", "w").write("")
+
+        if os.path.exists("files/cache/replace_history.txt"):
+            self.replaceEdit.addItems(open("files/cache/replace_history.txt").read().splitlines())
+        else:
+            open("files/cache/replace_history.txt", "w").write("")
+
+    def savehistory(self):
+        find = set([unicode(self.findEdit.currentText())] + open("files/cache/find_history.txt").read().splitlines())
+        open("files/cache/find_history.txt", "w").write("\n".join(find))
+        replace =set([unicode(self.replaceEdit.currentText())] + open("files/cache/replace_history.txt").read().splitlines())
+        open("files/cache/replace_history.txt", "w").write("\n".join(replace))
 
     def findButtonClick(self):
+        self.savehistory()
         #print "*" * 10
         #print "forward = %s" % (not self.backwardCheckBox.isChecked())
         #print self.findEdit.text()
@@ -206,7 +235,7 @@ class FindDialog(QtGui.QDialog):
         ##int 	index = -1,
         ##bool 	show is true (the default) then any text found is made visible
         ##)
-        return self.parent().editor.findFirst(unicode(self.findEdit.text()),
+        return self.parent().editor.findFirst(unicode(self.findEdit.currentText()),
                         self.regexCheckBox.isChecked(), # re
                         self.caseCheckBox.isChecked(),
                         self.wholeWordsCheckBox.isChecked(),
@@ -226,17 +255,14 @@ class FindDialog(QtGui.QDialog):
         print i
         QtGui.QMessageBox.information(self, "Count", str(i))
 
-
     def replaceButtonClick(self):
-        #print "*" * 5
-        #print "replaceButtonClick: %s" % unicode(self.replaceEdit.text())
-        self.parent().editor.replace(unicode(self.replaceEdit.text()))
+        self.parent().editor.replace(unicode(self.replaceEdit.currentText()))
         return self.findButtonClick()
 
 
     def replaceallclick(self):
         print "*" * 5
-        print "replaceallclick: %s" % unicode(self.replaceEdit.text())
+        print "replaceallclick: %s" % unicode(self.replaceEdit.currentText())
 
         while self.replaceButtonClick():
             pass
@@ -266,7 +292,7 @@ class SqlTab(QtGui.QWidget):
         self.editor.setWhatsThis("")
         self.editor.setObjectName("textEdit")
         self.editor.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
-        self.editor.setLexer(Qsci.QsciLexerSQL())
+        #self.editor.setLexer(Qsci.QsciLexerSQL())
         fm = QtGui.QFontMetrics(getFont(6))
         self.editor.setFont(font)
         #self.editor.setMarginsFont(getFont(7))
@@ -274,20 +300,16 @@ class SqlTab(QtGui.QWidget):
         #self.editor.setMarginWidth(0, fm.width( "0000" ) + 2)
         #self.editor.setMarginLineNumbers(2, True)
         self.editor.setCaretLineVisible(False)
-        # Folding visual : we will use boxes
+        # Folding visual : we will use boxes, Braces matching
         self.editor.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
-        # Braces matching
         self.editor.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
         ## Editing line color
         self.editor.setCaretLineVisible(True)
         self.editor.setCaretLineBackgroundColor(QtGui.QColor("#B2EC5D"))
-
         ## Marker (bookmarks)
         self.editor.setMarkerBackgroundColor(QtGui.QColor("#663854"))
         self.editor.setMarkerForegroundColor(QtGui.QColor("#006B3C"))
-
-        ## Margins colors
-        # line numbers margin
+        ## line numbers margin
         self.editor.setMarginsBackgroundColor(QtGui.QColor("#F8F4FF"))
         self.editor.setMarginsForegroundColor(QtGui.QColor("#663854"))
 
@@ -304,23 +326,10 @@ class SqlTab(QtGui.QWidget):
         self.editor.setUtf8(True)
         self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
 
-        self.sqlLexer = Qsci.QsciLexerSQL(self.editor)
-        self.api = Qsci.QsciAPIs(self.sqlLexer)
-        self.api.add(QtCore.QString("SELECT\t*\nFROM\t"))
-        self.api.add(QtCore.QString("UPDATE\t_\nSET\t\t"))
-        self.api.add(QtCore.QString("INSERT\tINTO\t_\nVALUES\t"))
-        self.api.add(QtCore.QString("CREATE\tTABLE\t"))
-        self.api.add(QtCore.QString("CREATE\tVIEW\t"))
-        self.api.add("www simple database explore")
-        self.api.prepare()
-        self.sqlLexer.setAPIs(self.api)
-        self.editor.setLexer(self.sqlLexer)
+        self.setAutoComplete()
 
-        self.editor.setAutoCompletionThreshold(2)
-        self.editor.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
-        self.editor.setAutoCompletionCaseSensitivity(False)
-        #self.editor.setAutoCompletionReplaceWord(True)
-        #self.editor.setAutoCompletionShowSingle(True)
+        QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userListSelected)
+        unindentshortcut = QtGui.QShortcut(QtGui.QKeySequence("Shift+Tab"), self.editor, self.unindent)
 
         # ===============================================
         self.table = QtGui.QTableView(self)
@@ -335,6 +344,10 @@ class SqlTab(QtGui.QWidget):
         self.table.setWordWrap(True)
         self.table.verticalHeader().setDefaultSectionSize(20)
         self.table.verticalHeader().setMinimumSectionSize(16)
+
+        QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, self.copytoclipbord)
+
         # layout
         self.splitter = QtGui.QSplitter(self)
         self.splitter.addWidget(self.editor)
@@ -343,17 +356,47 @@ class SqlTab(QtGui.QWidget):
         self.splitter.setStretchFactor(1, 2)
         self.horizontalLayout.addWidget(self.splitter)
 
-        QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userListSelected)
-        vertical = self.table.verticalScrollBar()
-        QtCore.QObject.connect(vertical, QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
-        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, self.copytoclipbord)
         self.setLayout(self.horizontalLayout)
 
-        self.newAction = QtGui.QAction("Copy table selection", self,
-                shortcut="Ctrl+W", triggered=self.copyTable)
+##        self.newAction = QtGui.QAction("Copy table selection", self,
+##                shortcut="Ctrl+W", triggered=self.copyTable)
 
-    def copyTable(self):
-        print "dflkj"
+    def setAutoComplete(self):
+        self.sqlLexer = Qsci.QsciLexerSQL(self.editor)
+        self.api = Qsci.QsciAPIs(self.sqlLexer)
+
+        templates = {}
+
+        for name in ["default.yaml", "user.yaml"]: #default-NETEZZA.yaml, user-NETEZZA.yaml
+            if os.path.exists("files/templates/%s" % name):
+                items = yaml.load(open("files/templates/%s" % name))
+
+                if items != None:
+                    for i in items:
+                        templates[i] = items[i]
+
+        for i in templates:
+            self.api.add(templates[i])
+
+        self.api.prepare()
+        self.sqlLexer.setAPIs(self.api)
+        self.editor.setLexer(self.sqlLexer)
+
+        self.editor.setAutoCompletionThreshold(2)
+        self.editor.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
+        self.editor.setAutoCompletionCaseSensitivity(False)
+        self.editor.setAutoCompletionReplaceWord(True)
+        self.editor.setAutoCompletionFillupsEnabled(True)
+        #self.editor.setAutoCompletionShowSingle(True)
+
+    def unindent(self):
+        if self.editor.hasSelectedText():
+            lines = xrange(self.editor.getSelection()[0], self.editor.getSelection()[2] + 1)
+        else:
+            lines = [self.editor.getCursorPosition()[0]]
+
+        for i in lines:
+            self.editor.unindent(i)
 
     def defaultStretch(self):
         self.splitter.setSizes([200, 200])
@@ -395,100 +438,83 @@ class SqlTab(QtGui.QWidget):
 
         self.setSql(sql)
 
-    def showColumnAutoComplete(self):
-        startTime = time.time()
-        sqlparsed = sqlparse.parse(self.getSql().upper())
-        print len(self.connTab.catalog.keys())
-        words = set(re.split("\s", self.getSql().upper()))
+    def getAlias(self):
+        self.alias = dict([(i.upper(),i.upper()) for i in self.connTab.catalog])
+
+        # create a set of tables that appear in sql (for regex)
+        sql = self.getSql().upper()
+        words = set(re.split("\s", sql))
         searchFor = words & set([i.upper() for i in self.connTab.catalog])
-        print searchFor
         regex = re.compile("|".join(("%s\s+a?s?\s?[\w\_]+" % re.escape(i) for i in searchFor)), re.IGNORECASE)
 
-        for sql in sqlparsed:
-            if sql.token_first().value == 'SELECT':
-                sqlFrom = " ".join(sql.to_unicode().split("FROM")[1:])
-                for line in sqlFrom.splitlines():
-                    #print "*" * 5
-                    for tehAlias in re.findall(regex, line):
-                        tehAlias = re.split("\s|as", tehAlias)
-                        self.alias[tehAlias[-1]] = tehAlias[0]
+        for line in sql.splitlines():
+            for newAlias in re.findall(regex, line):
+                name, alias = re.split("\s|as", newAlias)
+                if alias not in keywords:
+                    self.alias[alias] = name
 
-        print "COLUMN AUTOCOMPLETE:", time.time() - startTime
+    def getselection(self, linefrom, indexfrom, lineto, indexto):
+        cursorPosition = self.editor.getCursorPosition()
 
+        self.editor.setSelection(linefrom, indexfrom, lineto, indexto)
+        text = unicode(self.editor.selectedText())
 
+        self.editor.setCursorPosition(*cursorPosition)
+
+        return text
+
+    def showColumnAutoComplete(self):
+        columns = []
+        self.getAlias()
+
+        # get string till the first space or newline
         x, y = self.editor.getCursorPosition()
-        self.editor.findFirst("[\.\s\n]", True, False, False, False, False, x, y - 1, False)
+        self.editor.findFirst("[\s\n]", True, False, False, False, False, x, y, False)
         x2, y2 = self.editor.getCursorPosition()
 
-        if x2 < x:
-            y2 = 0
-        self.editor.setSelection(x, y2, x, y)
-        aliasTemp = unicode(self.editor.selectedText()).replace(".", "").upper()
-        print aliasTemp
+        tempAlias, tempColumn = self.getselection(x, y2, x, y).upper().split(".")
 
-        try:
-            print "ALIAS:", self.alias
-            tableName = unicode(self.alias[aliasTemp])
+        if tempAlias in self.alias:
+            tableName = unicode(self.alias[tempAlias])
             columns = self.connTab.catalog[tableName]["COLUMNS"].keys()
 
             if len(columns) == 0:
                 print "GET columns catalog from DB!"
-                #t = self.conn.record(tableName)
                 self.connTab.catalog[tableName]["COLUMNS"] = {}
                 for c in self.connTab.cursor.columns(table=tableName):
                     self.connTab.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
-
+                # workaround.. cuz of casesensitivity..
                 for c in self.connTab.cursor.columns(table=tableName.lower()):
                     self.connTab.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
 
                 self.connTab.saveCatalog()
 
                 columns = self.connTab.catalog[tableName]["COLUMNS"].keys()
-        except Exception as exc:
-            print exc.args
-            print "Error at getting alias"
-            print "aliasTemp: '%s'" % aliasTemp, " not found in:"
-            for i in self.alias:
-                print "%s: '%s'" % (i, self.alias[i])
-            columns = []
 
-        self.editor.setSelection(x, y, x, y)
+        self.editor.setCursorPosition(x, y)
         if len(columns) > 0:
             self.editor.showUserList(1, sorted(columns))
 
     def showAutoComplete(self):
         # check if user want colomn help. if he typed "." before.
         line, index = self.editor.getCursorPosition()
-        self.editor.setSelection(line, index - 1, line, index)
-        if self.editor.hasSelectedText():
-            text = unicode(self.editor.selectedText())
-            if text == ".":
-                self.editor.setCursorPosition(line, index)
-                self.showColumnAutoComplete()
-                return
 
-        self.editor.setCursorPosition(line, index)
+        if self.getselection(line, index - 1, line, index) == ".":
+            self.showColumnAutoComplete()
+            return
+
         self.editor.showUserList(4, sorted(self.connTab.catalog.keys()))
 
     def userListSelected(self, i, s):
         print i, s
-        s = str(s)
 
-        # TABLE
-        if s.startswith("."):
-            s = s.replace(".", "")
-            self.editor.insert(s)
-            x, y = self.editor.getCursorPosition()
-            self.editor.setCursorPosition(x, y + len(s))
-        else:
-            x, y = self.editor.getCursorPosition()
-            self.editor.findFirst("[\.\s\n]", True, False, False, False, False, x, y, False)
-            x2, y2 = self.editor.getCursorPosition()
-            if x2 < x:
-                y2 = 0
-            self.editor.setSelection(x, y2, x, y)
-            self.editor.replace(s)
-            self.editor.setCursorPosition(x, y + len(s))
+        x, y = self.editor.getCursorPosition()
+        self.editor.findFirst("[\.\s\n]", True, False, False, False, False, x, y, False)
+        x2, y2 = self.editor.getCursorPosition()
+
+        self.editor.setSelection(x, y2, x, y)
+        self.editor.replace(s)
+        self.editor.setCursorPosition(x, y + len(s))
 
     def open(self, path):
         self.editor.setText(open(path).read())
@@ -790,6 +816,66 @@ class ConnTab(QtGui.QWidget):
         p.setX(p.x() + (self.width() / 2))
         p.setY(p.y() + (self.height() - 10))
         QtGui.QToolTip.showText(p, text)
+
+    def openFile(self, path):
+        self.childTabs.currentWidget().editor.setText(open(path).read().encode("UTF-8"))
+        self.childTabs.currentWidget().saveTo = path
+        self.childTabs.setTabText(self.childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+
+    def newSqlScript(self, path=None):
+        path = unicode(path)
+        sqlTab = SqlTab(self)
+        self.childTabs.addTab(sqlTab, "")
+        self.childTabs.setTabText(self.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", "Sql script", None, QtGui.QApplication.UnicodeUTF8))
+        self.childTabs.setCurrentWidget(sqlTab)
+
+        if path != None:
+            try:
+                self.openFile(path)
+                self.childTabs.setTabText(self.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+
+                open("files/cache/%s_recent.txt" % self.name, "a").write("")
+                files = open("files/cache/%s_recent.txt" % self.name).read().splitlines() + [path]
+                open("files/cache/%s_recent.txt" % self.name, "w").write("\n" + "\n".join(files[-10:]))
+
+            except Exception as exc:
+                print "Error opening file: %s" % path, unicode(exc.args)
+
+        if self.childTabs.count() < 2:
+            self.childTabs.tabBar().hide()
+        else:
+            self.childTabs.tabBar().show()
+
+    def saveWorkspace(self):
+        workspace = []
+        # If conn dir is in sql folder
+        if not os.path.exists(u"files/sql/%s" % (self.name)):
+            os.mkdir(u"files/sql/%s" % (self.name))
+        # save
+        for sqlTabIndex in range(0, self.childTabs.count()):
+            sqlTab = self.childTabs.widget(sqlTabIndex)
+            if sqlTab.saveTo == None:
+                path = u"files/sql/%s/%s_%s.sql" % (self.name, "".join(map(str, time.localtime()[:3])), randint(0, 1000000))
+            else:
+                path = unicode(sqlTab.saveTo)
+
+            sqlTab.saveFile(path)
+            workspace.append(path)
+
+        yaml.dump(workspace, open("files/workspace/%s.yaml" % self.name, "w"))
+
+    def openWorkspace(self):
+        if os.path.exists("files/workspace/%s.yaml" % self.name):
+            try:
+                workspace = yaml.load(open("files/workspace/%s.yaml" % self.name))
+            except Exception as exc:
+                warningMessage("Error at loading workspace!", unicode(exc.args))
+                workspace = list()
+
+            if workspace != None:
+                for sqlScript in workspace:
+                    print sqlScript
+                    self.newSqlScript(sqlScript)
 
 
 class SettingsTab(QtGui.QWidget):
