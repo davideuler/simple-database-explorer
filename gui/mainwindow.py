@@ -83,7 +83,7 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         #self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
         self.searchEditorAction = createAction("&Find", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
-        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "", self.formatSql, 8)
+        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "Ctrl+Shift+F", self.formatSql, 8)
         self.commentAction = createAction("&Comment", self, "MainWindow", "Ctrl+B", self.comment, 8)
         self.joinlinesAction = createAction("&Join Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
 

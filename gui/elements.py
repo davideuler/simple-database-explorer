@@ -11,7 +11,6 @@ import pyodbc
 from decimal import Decimal
 import sqlite3
 import os
-import win32clipboard
 from subprocess import Popen
 import subprocess
 
@@ -26,6 +25,7 @@ def getFont(size):
 
 def setClipboard(text):
     try:
+        import win32clipboard
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardText(text)
@@ -90,9 +90,8 @@ class NewConnectionDialog(QtGui.QDialog):
             self.connectionsComboBox.clear()
             self.fillComboBox()
             self.setPassword()
-        except:
-            self.warningMessage("Error", "Could not open ODBC Manager.")
-
+        except Exception as exc:
+            warningMessage("Could not open ODBC Manager", unicode(exc.args))
 
     def createComboBox(self):
             comboBox = QtGui.QComboBox()
