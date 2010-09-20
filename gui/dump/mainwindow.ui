@@ -115,6 +115,43 @@
             </property>
             <item>
              <widget class="QTextEdit" name="text">
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>232</red>
+                    <green>232</green>
+                    <blue>232</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>232</red>
+                    <green>232</green>
+                    <blue>232</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>232</red>
+                    <green>232</green>
+                    <blue>232</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
               <property name="font">
                <font>
                 <pointsize>12</pointsize>
@@ -124,11 +161,51 @@
             </item>
             <item>
              <widget class="QTableWidget" name="table">
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>236</red>
+                    <green>244</green>
+                    <blue>231</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>236</red>
+                    <green>244</green>
+                    <blue>231</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="AlternateBase">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>236</red>
+                    <green>244</green>
+                    <blue>231</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
               <property name="font">
                <font>
                 <family>Consolas</family>
                 <pointsize>8</pointsize>
                </font>
+              </property>
+              <property name="alternatingRowColors">
+               <bool>true</bool>
               </property>
               <property name="rowCount">
                <number>100000</number>
@@ -100226,7 +100303,7 @@
      <x>0</x>
      <y>0</y>
      <width>808</width>
-     <height>20</height>
+     <height>17</height>
     </rect>
    </property>
    <property name="font">
@@ -100312,7 +100389,7 @@
   </action>
  </widget>
  <resources>
-  <include location="C:/Python/Python27/Lib/site-packages/PyQt4/examples/itemviews/editabletreemodel/editabletreemodel.qrc"/>
+  <include location="../../../../../Python/Python27/Lib/site-packages/PyQt4/examples/itemviews/editabletreemodel/editabletreemodel.qrc"/>
  </resources>
  <connections>
   <connection>
