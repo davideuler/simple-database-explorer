@@ -247,10 +247,10 @@ class Ui_MainWindow(object):
     def recent(self):
         tab = self.mainTabs.currentWidget()
         if isinstance(tab, ConnTab):
-            if os.path.exists("files/cache/%s_recent.txt" % tab.name):
-                files = open("files/cache/%s_recent.txt" % tab.name).read().splitlines()
+            if os.path.exists("files/recent/%s.txt" % tab.name):
+                files = open("files/recent/%s.txt" % tab.name).read().splitlines()
                 item, ok = QtGui.QInputDialog.getItem(self, "Select a recent file...",
-                    "Recent:", list(reversed(files)), 0, False)
+                    "Recent:", list(set(files))[::-1], 0, False)
 
                 if ok and item:
                     self.mainTabs.currentWidget().newSqlScript(item)
@@ -301,7 +301,8 @@ class Ui_MainWindow(object):
     def saveFile(self, s):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             childTabs = self.mainTabs.currentWidget().childTabs
-            open(s, "w").write(childTabs.currentWidget().editor.text())
+            #open(s, "w").write(unicode(childTabs.currentWidget().editor.text()).encode("UTF-8"))
+            childTabs.currentWidget().saveFile(s)
 
             childTabs.currentWidget().saveTo = s
             childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))

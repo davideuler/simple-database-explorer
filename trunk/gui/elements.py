@@ -119,6 +119,7 @@ class FindDialog(QtGui.QDialog):
         self.findLabel = QtGui.QLabel("Find &what:")
         self.findEdit = self.createComboBox()
         self.findLabel.setBuddy(self.findEdit)
+        self.findEdit.setFocus()
 
         self.replaceLabel = QtGui.QLabel("Replace w&ith:")
         self.replaceEdit = self.createComboBox()
@@ -203,21 +204,21 @@ class FindDialog(QtGui.QDialog):
             return comboBox
 
     def openhistory(self):
-        if os.path.exists("files/cache/find_history.txt"):
-            self.findEdit.addItems(open("files/cache/find_history.txt").read().splitlines())
+        if os.path.exists("files/other/find_history.txt"):
+            self.findEdit.addItems(open("files/other/find_history.txt").read().splitlines())
         else:
-            open("files/cache/find_history.txt", "w").write("")
+            open("files/other/find_history.txt", "w").write("")
 
-        if os.path.exists("files/cache/replace_history.txt"):
-            self.replaceEdit.addItems(open("files/cache/replace_history.txt").read().splitlines())
+        if os.path.exists("files/other/replace_history.txt"):
+            self.replaceEdit.addItems(open("files/other/replace_history.txt").read().splitlines())
         else:
-            open("files/cache/replace_history.txt", "w").write("")
+            open("files/other/replace_history.txt", "w").write("")
 
     def savehistory(self):
-        find = set([unicode(self.findEdit.currentText())] + open("files/cache/find_history.txt").read().splitlines())
-        open("files/cache/find_history.txt", "w").write("\n".join(find))
-        replace =set([unicode(self.replaceEdit.currentText())] + open("files/cache/replace_history.txt").read().splitlines())
-        open("files/cache/replace_history.txt", "w").write("\n".join(replace))
+        find = set([unicode(self.findEdit.currentText())] + open("files/other/find_history.txt").read().splitlines())
+        open("files/other/find_history.txt", "w").write("\n".join(find))
+        replace =set([unicode(self.replaceEdit.currentText())] + open("files/other/replace_history.txt").read().splitlines())
+        open("files/other/replace_history.txt", "w").write("\n".join(replace))
 
     def findButtonClick(self):
         self.savehistory()
@@ -344,6 +345,17 @@ class SqlTab(QtGui.QWidget):
         self.table.setWordWrap(True)
         self.table.verticalHeader().setDefaultSectionSize(20)
         self.table.verticalHeader().setMinimumSectionSize(16)
+        # Palette
+        palette = QtGui.QPalette()
+        #brush = QtGui.QBrush(QtGui.QColor(241, 250, 235))
+        #brush = QtGui.QBrush(QtGui.QColor(233, 250, 221))
+        #brush = QtGui.QBrush(QtGui.QColor(226, 235, 221))
+        brush = QtGui.QBrush(QtGui.QColor(236, 244, 231))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.AlternateBase, brush)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.AlternateBase, brush)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.AlternateBase, brush)
+        #self.table.setPalette(palette)
 
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybeFetchMore)
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self.table, self.copytoclipbord)
@@ -521,7 +533,7 @@ class SqlTab(QtGui.QWidget):
         self.saveTo = path
 
     def saveFile(self, path):
-        open(path, "w").write(self.editor.text())
+        open(path, "w").write(unicode(self.editor.text()).encode("UTF-8"))
         self.saveTo = path
 
     def printMessage(self, table):
@@ -818,7 +830,7 @@ class ConnTab(QtGui.QWidget):
         QtGui.QToolTip.showText(p, text)
 
     def openFile(self, path):
-        self.childTabs.currentWidget().editor.setText(open(path).read().encode("UTF-8"))
+        self.childTabs.currentWidget().editor.setText(open(path).read().decode("UTF-8"))
         self.childTabs.currentWidget().saveTo = path
         self.childTabs.setTabText(self.childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
@@ -834,9 +846,9 @@ class ConnTab(QtGui.QWidget):
                 self.openFile(path)
                 self.childTabs.setTabText(self.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
-                open("files/cache/%s_recent.txt" % self.name, "a").write("")
-                files = open("files/cache/%s_recent.txt" % self.name).read().splitlines() + [path]
-                open("files/cache/%s_recent.txt" % self.name, "w").write("\n" + "\n".join(files[-10:]))
+                open("files/recent/%s.txt" % self.name, "a").write("")
+                files = open("files/recent/%s.txt" % self.name).read().splitlines() + [path]
+                open("files/recent/%s.txt" % self.name, "w").write("\n" + "\n".join(files[-10:]))
 
             except Exception as exc:
                 print "Error opening file: %s" % path, unicode(exc.args)
@@ -876,6 +888,9 @@ class ConnTab(QtGui.QWidget):
                 for sqlScript in workspace:
                     print sqlScript
                     self.newSqlScript(sqlScript)
+        else:
+            self.newSqlScript()
+
 
 
 class SettingsTab(QtGui.QWidget):
