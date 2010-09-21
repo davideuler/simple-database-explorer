@@ -65,12 +65,12 @@ class Ui_MainWindow(object):
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newConnection, 8)
-        self.recentAction = createAction("Recent", self, "MainWindow", "", self.recent, 8)
+        self.recentAction = createAction("Recent files", self, "MainWindow", "", self.recent, 8)
 
-        self.newSqlAction = createAction("&New &Sql script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
-        self.openAction = createAction("&Open Sql script", self, "MainWindow", "Ctrl+O", self.openDialog, 8)
-        self.saveAction = createAction("&Save Sql script", self, "MainWindow", "Ctrl+S", self.saveDialog, 8)
-        self.saveAsAction = createAction("&Save As Sql script", self, "MainWindow", "Ctrl+Shift+S", self.saveAsDialog, 8)
+        self.newSqlAction = createAction("&New script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
+        self.openAction = createAction("&Open script", self, "MainWindow", "Ctrl+O", self.openDialog, 8)
+        self.saveAction = createAction("&Save script", self, "MainWindow", "Ctrl+S", self.saveDialog, 8)
+        self.saveAsAction = createAction("&Save As script", self, "MainWindow", "Ctrl+Shift+S", self.saveAsDialog, 8)
 
         self.fileMenu.addAction(self.newConnAction)
         self.fileMenu.addSeparator()
@@ -85,10 +85,11 @@ class Ui_MainWindow(object):
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
         #self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
-        self.searchEditorAction = createAction("&Find", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
-        self.formatSqlAction = createAction("&Format Sql", self, "MainWindow", "Ctrl+Shift+F", self.formatSql, 8)
-        self.commentAction = createAction("&Comment", self, "MainWindow", "Ctrl+B", self.comment, 8)
-        self.joinlinesAction = createAction("&Join Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
+        self.searchEditorAction = createAction("&Find and Replace", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
+        self.formatSqlAction = createAction("&Format SQL", self, "MainWindow", "Ctrl+Shift+F", self.formatSql, 8)
+        self.commentAction = createAction("&Comment selection", self, "MainWindow", "Ctrl+B", self.comment, 8)
+        self.joinlinesAction = createAction("&Join selected Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
+        self.splitlinesAction = createAction("&Split selected Lines", self, "MainWindow", "Ctrl+I", self.splitlines, 8)
 
         #self.editMenu.addAction(self.copyAction)
         self.editMenu.addSeparator()
@@ -97,6 +98,7 @@ class Ui_MainWindow(object):
         self.editMenu.addAction(self.commentAction)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.joinlinesAction)
+        self.editMenu.addAction(self.splitlinesAction)
 
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
@@ -125,11 +127,11 @@ class Ui_MainWindow(object):
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
         #self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newConnection, 8)
-        self.toSqlEditorAction = createAction("&Sql Edit", self, "MainWindow", "Alt+M", self.toSqlEditor, 8)
+        self.toSqlEditorAction = createAction("&SQL Editor", self, "MainWindow", "Alt+M", self.toSqlEditor, 8)
         self.leftConnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftConnection, 8)
         self.rightConnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightConnection, 8)
-        self.leftSqlEditAction = createAction("L&eft Sql Edit", self, "MainWindow", "Alt+Left", self.leftSqlEdit, 8)
-        self.rightSqlEditAction = createAction("R&ight Sql Edit", self, "MainWindow", "Alt+Right", self.rightSqlEdit, 8)
+        self.leftSqlEditAction = createAction("L&eft SQL script", self, "MainWindow", "Alt+Left", self.leftSqlEdit, 8)
+        self.rightSqlEditAction = createAction("R&ight SQL script", self, "MainWindow", "Alt+Right", self.rightSqlEdit, 8)
 
         self.leftPanTableAction = createAction("Le&ft pan Table", self, "MainWindow", "Alt+4", self.leftPanTable, 8)
         self.rightPanTableAction = createAction("Ri&ght pan Table", self, "MainWindow", "Alt+6", self.rightPanTable, 8)
@@ -214,8 +216,8 @@ class Ui_MainWindow(object):
         dialog = NewConnectionDialog(self, self.sett.settings['connections'])
         dialog.exec_()
         if dialog.result() == 1:
-            connection = str(dialog.connectionsComboBox.currentText())
-            password = str(dialog.passwordEdit.text())
+            connection = unicode(dialog.connectionsComboBox.currentText())
+            password = unicode(dialog.passwordEdit.text())
 
             if dialog.savePassword.isChecked():
                 self.sett = self.loadSettings()
@@ -247,14 +249,14 @@ class Ui_MainWindow(object):
     def recent(self):
         tab = self.mainTabs.currentWidget()
         if isinstance(tab, ConnTab):
-            if os.path.exists("files/recent/%s.txt" % tab.name):
-                files = open("files/recent/%s.txt" % tab.name).read().splitlines()
+
+            if os.path.exists("files/recent/%s.pickle" % tab.name):
+                recent = pickle.load(open("files/recent/%s.pickle" % tab.name))
                 item, ok = QtGui.QInputDialog.getItem(self, "Select a recent file...",
-                    "Recent:", list(set(files))[::-1], 0, False)
+                    "Recent:", sorted(recent, key=recent.get, reverse=True), 0, False)
 
                 if ok and item:
-                    self.mainTabs.currentWidget().newSqlScript(item)
-                    #self.openFile(item)
+                    self.mainTabs.currentWidget().newSqlScript(unicode(item))
 
     def newSqlScript(self, path=None):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
@@ -337,6 +339,10 @@ class Ui_MainWindow(object):
     def joinlines(self):
         if isinstance(self.mainTabs.currentWidget(), ConnTab):
             self.mainTabs.currentWidget().childTabs.currentWidget().joinlines()
+
+    def splitlines(self):
+        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+            self.mainTabs.currentWidget().childTabs.currentWidget().splitlines()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
@@ -501,7 +507,7 @@ class Ui_MainWindow(object):
         yaml.dump(workspace, open("files/workspace.yaml", "w"))
 
     def openWorkspace(self):
-        print "openWorkspace"
+        print "#OpenWorkspace"
         if os.path.exists("files/workspace.yaml"):
             try:
                 workspace = yaml.load(open("files/workspace.yaml"))
@@ -511,6 +517,7 @@ class Ui_MainWindow(object):
 
             if workspace != None:
                 for connName in workspace:
+                    print connName
                     try:
                         password = self.sett.settings['connections'].get(connName, {}).get("password", "")
                         connTab = self.openNewConnection(connName, password,  False)
