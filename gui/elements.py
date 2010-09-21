@@ -82,7 +82,7 @@ class NewConnectionDialog(QtGui.QDialog):
         self.setPassword()
 
     def setPassword(self):
-        password = self.settings.get(str(self.connectionsComboBox.currentText()), {}).get("password", "")
+        password = self.settings.get(unicode(self.connectionsComboBox.currentText()), {}).get("password", "")
         self.passwordEdit.setText(password)
 
     def openODBCManager(self):
@@ -104,7 +104,6 @@ class NewConnectionDialog(QtGui.QDialog):
 
     def fillComboBox(self):
         for i in sorted(self.connections.keys()):
-            #self.connectionsComboBox.insertSeparator(1000)
             self.connectionsComboBox.addItem(i)
 
     def createButton(self, text, member):
@@ -204,28 +203,39 @@ class FindDialog(QtGui.QDialog):
             return comboBox
 
     def openhistory(self):
-        if os.path.exists("files/other/find_history.txt"):
-            self.findEdit.addItems(open("files/other/find_history.txt").read().splitlines())
-        else:
-            open("files/other/find_history.txt", "w").write("")
+        if self.parent().editor.hasSelectedText():
+            self.findEdit.addItem(self.parent().editor.selectedText())
 
-        if os.path.exists("files/other/replace_history.txt"):
-            self.replaceEdit.addItems(open("files/other/replace_history.txt").read().splitlines())
-        else:
-            open("files/other/replace_history.txt", "w").write("")
+        # FIND
+        if os.path.exists("files/search/find.pickle"):
+            find = pickle.load(open("files/search/find.pickle"))
+            self.findEdit.addItems(sorted(find, key=find.get, reverse=True))
+        # REPLACE
+        if os.path.exists("files/search/replace.pickle"):
+            replace = pickle.load(open("files/search/replace.pickle"))
+            self.replaceEdit.addItems(sorted(replace, key=replace.get, reverse=True))
 
     def savehistory(self):
-        find = set([unicode(self.findEdit.currentText())] + open("files/other/find_history.txt").read().splitlines())
-        open("files/other/find_history.txt", "w").write("\n".join(find))
-        replace =set([unicode(self.replaceEdit.currentText())] + open("files/other/replace_history.txt").read().splitlines())
-        open("files/other/replace_history.txt", "w").write("\n".join(replace))
+        # FIND
+        if os.path.exists("files/search/find.pickle"):
+            find = pickle.load(open("files/search/find.pickle"))
+        else:
+            find = {}
+
+        find[unicode(self.findEdit.currentText())] = int(time.time())
+        pickle.dump(find, open("files/search/find.pickle", "w"))
+
+        # REPLACE
+        if os.path.exists("files/search/replace.pickle"):
+            replace = pickle.load(open("files/search/replace.pickle"))
+        else:
+            replace = {}
+
+        replace[unicode(self.replaceEdit.currentText())] = int(time.time())
+        pickle.dump(replace, open("files/search/replace.pickle", "w"))
 
     def findButtonClick(self):
         self.savehistory()
-        #print "*" * 10
-        #print "forward = %s" % (not self.backwardCheckBox.isChecked())
-        #print self.findEdit.text()
-
         ##(const QString & 	expr,
         ##bool 	re,
         ##bool 	cs is true then the search is case sensitive.
@@ -247,13 +257,10 @@ class FindDialog(QtGui.QDialog):
 
     def countbuttonclick(self):
         self.parent().editor.setCursorPosition(0, 0)
-
         i = 0
-
         while self.findButtonClick():
             i += 1
 
-        print i
         QtGui.QMessageBox.information(self, "Count", str(i))
 
     def replaceButtonClick(self):
@@ -264,10 +271,11 @@ class FindDialog(QtGui.QDialog):
     def replaceallclick(self):
         print "*" * 5
         print "replaceallclick: %s" % unicode(self.replaceEdit.currentText())
-
+        i = 0
         while self.replaceButtonClick():
-            pass
-            #print "replaced..."
+            i += 1
+
+        QtGui.QMessageBox.information(self, "Replaced items:", str(i))
 
 
 class SqlTab(QtGui.QWidget):
@@ -289,9 +297,9 @@ class SqlTab(QtGui.QWidget):
         #       text
         font = getFont(12)
         self.editor = Qsci.QsciScintilla(self)
-        self.editor.setToolTip("QsciScintilla")
+        self.editor.setToolTip("SQL editor")
         self.editor.setWhatsThis("")
-        self.editor.setObjectName("textEdit")
+        self.editor.setObjectName("sqleditor")
         self.editor.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
         #self.editor.setLexer(Qsci.QsciLexerSQL())
         fm = QtGui.QFontMetrics(getFont(6))
@@ -441,14 +449,8 @@ class SqlTab(QtGui.QWidget):
 
     def formatSql(self):
         if self.editor.hasSelectedText():
-            text = self.findSelection()
-            sql = sqlparse.format(text, reindent=True, keyword_case='upper')
+            sql = sqlparse.format(self.findSelection(), reindent=True, keyword_case='upper')
             self.editor.replace(sql)
-
-
-        print sql
-
-        self.setSql(sql)
 
     def getAlias(self):
         self.alias = dict([(i.upper(),i.upper()) for i in self.connTab.catalog])
@@ -558,11 +560,13 @@ class SqlTab(QtGui.QWidget):
         error = False
         self.printMessage([["STATUS"], [""]])
 
+        if not self.connTab.conn2:
+            self.connTab.openConnection()
+
         if len(sqlparsed) > 0:
             # is select
             if len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT':
                 try:
-
                     self.query2 = self.connTab.cursor.execute(self.getSql())
                 except:
                     error = True
@@ -642,8 +646,29 @@ class SqlTab(QtGui.QWidget):
 
     def joinlines(self):
         if self.editor.hasSelectedText():
+            joiner, ok = QtGui.QInputDialog.getText(self, "Enter joiner...",
+                "Joiner:", QtGui.QLineEdit.Normal,
+                ", ")
+
+        if ok: #  and text != ''
             text = self.findSelection()
-            self.editor.replace(re.sub("\n|\r", " ", text))
+            text = re.split("\n|\r", text)
+            text = unicode(joiner).join([i for i in text if i != ""])
+            self.editor.replace(text)
+
+    def splitlines(self):
+        if self.editor.hasSelectedText():
+            spliter, ok = QtGui.QInputDialog.getText(self, "Enter spliter...",
+                "regex:", QtGui.QLineEdit.Normal,
+                ",")
+
+        if ok and spliter != '':
+            try:
+                spliter = re.compile(unicode(spliter))
+                text = re.split(spliter, unicode(self.findSelection()))
+                self.editor.replace("\n".join(text))
+            except Exception as exc:
+                warningMessage("Error splitting line!", unicode(exc.args))
 
     def copytoclipbord(self):
         print "copytoclipbord"
@@ -733,14 +758,9 @@ class ConnTab(QtGui.QWidget):
         # SQLITE
         self.connSettings = connSettings
         self.name = connName
+        self.password = password
 
-        try:
-            self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, password))
-            self.conn2.autocommit = True
-            self.cursor = self.conn2.cursor()
-        except Exception as exc:
-            self.conn2 = None
-            warningMessage("Error opening connection: %s" % connName, unicode(exc.args))
+        self.openConnection()
         # AUTO COMPLETE
         self.loadCatalog()
         self.setIcon()
@@ -770,6 +790,15 @@ class ConnTab(QtGui.QWidget):
 ##        conn.setPassword(password)
 
 ##        return conn
+
+    def openConnection(self):
+        try:
+            self.conn2 = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.password))
+            self.conn2.autocommit = True
+            self.cursor = self.conn2.cursor()
+        except Exception as exc:
+            self.conn2 = None
+            warningMessage("Error opening connection: %s" % connName, unicode(exc.args))
 
     def setIcon(self):
         if self.conn2:
@@ -845,10 +874,14 @@ class ConnTab(QtGui.QWidget):
             try:
                 self.openFile(path)
                 self.childTabs.setTabText(self.childTabs.indexOf(sqlTab), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+                # Save for recent
+                if os.path.exists("files/recent/%s.pickle" % self.name):
+                    recent = pickle.load(open("files/recent/%s.pickle" % self.name))
+                else:
+                    recent = {}
 
-                open("files/recent/%s.txt" % self.name, "a").write("")
-                files = open("files/recent/%s.txt" % self.name).read().splitlines() + [path]
-                open("files/recent/%s.txt" % self.name, "w").write("\n" + "\n".join(files[-10:]))
+                recent[path] = int(time.time())
+                pickle.dump(recent, open("files/recent/%s.pickle" % self.name, "w"))
 
             except Exception as exc:
                 print "Error opening file: %s" % path, unicode(exc.args)
@@ -885,9 +918,9 @@ class ConnTab(QtGui.QWidget):
                 workspace = list()
 
             if workspace != None:
-                for sqlScript in workspace:
-                    print sqlScript
-                    self.newSqlScript(sqlScript)
+                for path in workspace:
+                    print "\t", path
+                    self.newSqlScript(path)
         else:
             self.newSqlScript()
 
