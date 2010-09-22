@@ -232,7 +232,7 @@ class Ui_MainWindow(object):
 
     def openNewConnection(self, connName, password="", openNewSql=True):
         connSettings = self.sett.settings['connections'].get(connName, {})
-        connTab = ConnTab(connName=connName, password=password, connSettings=connSettings)
+        connTab = ConnTab(parent=self, connName=connName, password=password, connSettings=connSettings)
         self.mainTabs.addTab(connTab, "")
         self.mainTabs.setTabText(self.mainTabs.indexOf(connTab), QtGui.QApplication.translate("MainWindow", connName, None, QtGui.QApplication.UnicodeUTF8))
         self.mainTabs.setTabIcon(self.mainTabs.indexOf(connTab), connTab.icon)
@@ -405,7 +405,7 @@ class Ui_MainWindow(object):
             self.saveWorkspace()
             startTime = time.time()
             self.mainTabs.currentWidget().childTabs.currentWidget().execute()
-            self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
+            #self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopExecuteSql(self):
         self.mainTabs.currentWidget().executeThread.stop()

@@ -278,6 +278,41 @@ class FindDialog(QtGui.QDialog):
         QtGui.QMessageBox.information(self, "Replaced items:", str(i))
 
 
+##class qtestit(QtCore.QThread):
+##    def __init__ (self, parent = None, db=None, table='', tableType=0):
+##        QtCore.QThread.__init__(self, parent)
+##class testit(Thread):
+##    def __init__ (self,db, table, tableType):
+##        Thread.__init__(self)
+##        self.db = db
+##        self.tableName = table
+##        self.table = {}
+##        self.tableType = tableType
+##    def run(self):
+##        self.tableName
+##        t = self.db.record(self.tableName)
+##        self.table = {
+##            "TYPE": self.tableType,
+##            "COLUMNS": [(unicode(t.field(c).name()), t.field(c).type(), t.field(c).length()) for c in range(len(t))]
+##            }
+
+class ExecuteThread(QtCore.QThread):
+    def __init__(self, parent=None):
+       QtCore.QThread.__init__(self, parent)
+       self.sqlTab= parent
+
+    def run(self):
+        try:
+            self.sqlTab.connTab.cursor
+            self.sqlTab.query2 = self.sqlTab.connTab.cursor.execute(self.sqlTab.getSql())
+            self.emit(QtCore.SIGNAL('finished'))
+        except Exception as exc:
+            dbError = exc.args[0]
+            driverError = exc.args[1]
+            print "Error at Thread:", dbError, driverError
+            self.sqlTab.executeerror = exc.args
+
+
 class SqlTab(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
         super(SqlTab, self).__init__(parent)
@@ -554,62 +589,88 @@ class SqlTab(QtGui.QWidget):
         self.table.setWordWrap(True)
         self.table.resizeColumnsToContents()
 
+    def locktab(self):
+        self.connTab.setDisabled(True)
+        #self.connTab.setIcon("files/icons/DeletedIcon.ico")
+
+    def showworking(self):
+        print "Pixmap"
+        pixmap = QtGui.QPixmap("files/icons/working.gif");
+        s = QtGui.QSplashScreen(self, pixmap)
+        print "SHOW"
+        s.show()
+        s.showMessage("Working")
+
+    def unlocktab(self):
+        print "unlock!!!"
+        self.connTab.setDisabled(False)
+        self.connTab.setIcon()
 
     def execute(self):
+        # TODO: replace sqlparse with something more simple...
         sqlparsed = sqlparse.parse(self.getSql())
-        error = False
-        self.printMessage([["STATUS"], [""]])
-
+        self.executeerror = None
+        # Reconnect
         if not self.connTab.conn2:
             self.connTab.openConnection()
 
         if len(sqlparsed) > 0:
-            # is select
             if len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT':
+                print "IS one SELECT"
+                self.locktab()
+                self.executeThread = ExecuteThread(self)
+                self.connect(self.executeThread, QtCore.SIGNAL('finished()'), self.postexecute)
+                self.executeThread.start()
+
+                #self.showworking()
+            else:
+                self.executemany()
+
+
+    def executemany(self):
+        sqlparsed = sqlparse.parse(self.getSql())
+
+        columns = ["S", "ROWS", "TIME (sec)", "DB_ERROR", "DRIVER_ERROR", "SQL"]
+        printTable = [columns]
+        self.fetchRowsNum = -1
+
+        for sql in sqlparsed:
+            if len(sql.tokens) > 2:
+                startTime = time.time()
                 try:
-                    self.query2 = self.connTab.cursor.execute(self.getSql())
-                except:
-                    error = True
+                    query = self.connTab.cursor.execute(sql.to_unicode())
+                    driverError, dbError, status, rows = "", "", "OK", query.rowcount
+                except Exception as exc:
+                    driverError, dbError, status, rows = exc.args[0], exc.args[1], "ERROR", -1
 
-                # ==== SELECT ====
-                if error == False:
-                    self.columnsLen = len(self.query2.description)
-                    self.model = QtGui.QStandardItemModel(0, self.columnsLen)
+                totalTime = time.time() - startTime
+                printTable.append([status, rows, totalTime, dbError, driverError, sql.to_unicode().replace("\n", " ").strip()])
 
-                    for index, column in enumerate(self.query2.description):
-                        self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
+        self.printMessage(printTable)
 
-                    self.rownum = 0
-                    self.fetchRowsNum = 0
+    def postexecute(self):
+        self.unlocktab()
 
-                    # BIND ON START
-                    self.table.setModel(self.model)
-                    self.fetchMore()
+        if self.executeerror == None:
+            self.columnsLen = len(self.query2.description)
+            #print self.query2.description
+            self.model = QtGui.QStandardItemModel(0, self.columnsLen)
 
-            if not (len(sqlparsed) == 1 and sqlparsed[0].token_first().value.upper() == 'SELECT') or error:
-                columns = ["S", "ROWS", "TIME (sec)", "DB_ERROR", "DRIVER_ERROR", "SQL"]
-                printTable = [columns]
-                self.fetchRowsNum = -1
+            for index, column in enumerate(self.query2.description):
+                self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
 
-                for sql in sqlparsed:
-                    if len(sql.tokens) > 2:
-                        startTime = time.time()
-                        try:
+            self.rownum = 0
+            self.fetchRowsNum = 0
 
-                            query = self.connTab.cursor.execute(sql.to_unicode()) #QtSql.QSqlQuery(query=sql.to_unicode(), db=self.conn)
-                            driverError = dbError = ""
-                            status = "OK"
-                            rows = query.rowcount
-                        except Exception as exc:
-                            dbError = exc.args[0]
-                            driverError = exc.args[1]
-                            status = "ERROR"
-                            rows = -1
+            # BIND ON START
+            self.table.setModel(self.model)
+            self.fetchMore()
+        else:
+            columns = ["S", "ROWS", "TIME (sec)", "DB_ERROR", "DRIVER_ERROR", "SQL"]
+            printTable = [columns]
+            printTable.append(["ERROR", -1, -1, self.executeerror[0], self.executeerror[1], self.getSql().replace("\n", " ").strip()])
+            self.printMessage(printTable)
 
-                        totalTime = time.time() - startTime
-                        printTable.append([status, rows, totalTime, dbError, driverError, sql.to_unicode().replace("\n", " ").strip()])
-
-                self.printMessage(printTable)
 
     def executeToFile(self, path):
         try:
@@ -717,7 +778,11 @@ class SqlTab(QtGui.QWidget):
         if isinstance(x, pyodbc.NUMBER) or isinstance(x, pyodbc.ROWID) or isinstance(x, pyodbc.STRING):
             return x
         elif isinstance(x, Decimal):
-            return int(x)
+            # TODO: make it faster.. u know the types from cursor.desc...
+            if int(x) == float(x):
+                return int(x)
+            else:
+                return str(x) #unicode(float(x))
         elif isinstance(x, pyodbc.Date) or isinstance(x, pyodbc.DATETIME) or isinstance(x, pyodbc.Time):
             return unicode(x)
         elif isinstance(x, pyodbc.BINARY):
@@ -800,11 +865,17 @@ class ConnTab(QtGui.QWidget):
             self.conn2 = None
             warningMessage("Error opening connection: %s" % connName, unicode(exc.args))
 
-    def setIcon(self):
-        if self.conn2:
-            self.icon = QtGui.QIcon("files/icons/NormalIcon.ico")
+    def setIcon(self, path=None):
+        if path == None:
+            if self.conn2:
+                self.icon = QtGui.QIcon("files/icons/NormalIcon.ico") #files/icons/working.gif
+            else:
+                self.icon = QtGui.QIcon("files/icons/ModifiedIcon.ico")
         else:
-            self.icon = QtGui.QIcon("files/icons/ModifiedIcon.ico")
+            print "path != None"
+            self.icon = QtGui.QIcon(path)
+
+            #self.parent().mainTabs.setTabIcon(self.mainTabs.indexOf(self), self.icon)
 
     def getCatalog(self):
         catalog = {}
