@@ -653,7 +653,7 @@ class SqlTab(QtGui.QWidget):
 
         if self.executeerror == None:
             self.columnsLen = len(self.query2.description)
-            #print self.query2.description
+            print self.query2.description
             self.model = QtGui.QStandardItemModel(0, self.columnsLen)
 
             for index, column in enumerate(self.query2.description):
@@ -790,6 +790,12 @@ class SqlTab(QtGui.QWidget):
         else:
             return x
 
+    def isNumber(self, x):
+        if isinstance(x, (pyodbc.NUMBER, pyodbc.ROWID, Decimal, long)):
+            return True
+
+        return False
+
     def fetchMore(self):
         if self.fetchRowsNum != -1:
             self.fetchRowsNum += 256
@@ -800,6 +806,9 @@ class SqlTab(QtGui.QWidget):
                 #print row
                 for j in xrange(self.columnsLen):
                     self.model.setData(self.model.index(self.rownum, j, QtCore.QModelIndex()), self.convertForQt(row[j]), role=0)
+                    if self.isNumber(row[j]):
+                        self.model.setData(self.model.index(self.rownum, j, QtCore.QModelIndex()), QtCore.QVariant(QtCore.Qt.AlignRight + QtCore.Qt.AlignVCenter) , QtCore.Qt.TextAlignmentRole)
+
                 self.rownum += 1
 
                 if self.rownum >= self.fetchRowsNum:
