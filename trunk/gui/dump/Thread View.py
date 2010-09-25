@@ -260,3 +260,41 @@ class qtestit(QtCore.QThread):
 ##        self.console.setCompleter(self.getConnCompleter())
 ##
 ##        self.vboxlayout.addWidget(self.console)
+
+
+
+
+        # Palette
+        palette = QtGui.QPalette()
+        #brush = QtGui.QBrush(QtGui.QColor(241, 250, 235))
+        #brush = QtGui.QBrush(QtGui.QColor(233, 250, 221))
+        #brush = QtGui.QBrush(QtGui.QColor(226, 235, 221))
+        brush = QtGui.QBrush(QtGui.QColor(236, 244, 231))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.AlternateBase, brush)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.AlternateBase, brush)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.AlternateBase, brush)
+        #self.table.setPalette(palette)
+
+
+
+    def executemany(self):
+        sqlparsed = self.editor.getparsedsql()
+
+        self.fetchedall = True
+        self.locktab()
+        self.executemanythread = ExecuteManyThread(self)
+        self.connect(self.executemanythread, QtCore.SIGNAL('executed'), self.executed)
+        self.executemanythread.start()
+##        for sql in sqlparsed:
+##            startTime = time.time()
+##            try:
+##                query = self.connection.cursor.execute(sql.to_unicode())
+##                driverError, dbError, status, rows = "", "", "OK", query.rowcount
+##            except Exception as exc:
+##                driverError, dbError, status, rows = exc.args[0], exc.args[1], "ERROR", -1
+##
+##            totalTime = time.time() - startTime
+##            printTable.append([status, rows, totalTime, dbError, driverError, sql.to_unicode().replace("\n", " ").strip()])
+
+        #self.printmessage(printTable)
