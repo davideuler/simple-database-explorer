@@ -14,12 +14,11 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(808, 600)
         # SETTINGS
-        self.sett = self.loadSettings()
+        self.sett = self.loadsettings()
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("files/icons/sdbe.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
-
 
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
@@ -28,15 +27,15 @@ class Ui_MainWindow(object):
         self.vboxlayout.setContentsMargins(1, 1, 1, 2)
         self.vboxlayout.setObjectName("vboxlayout")
         # MAIN TABS
-        self.mainTabs = QtGui.QTabWidget(self.centralWidget)
-        self.mainTabs.setFont(getFont(12))
-        self.mainTabs.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
-        self.mainTabs.setDocumentMode(False)
-        self.mainTabs.setTabsClosable(True)
-        self.mainTabs.setMovable(True)
-        self.mainTabs.setObjectName("mainTabs")
+        self.conntabs = QtGui.QTabWidget(self.centralWidget)
+        self.conntabs.setFont(getFont(12))
+        self.conntabs.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.conntabs.setDocumentMode(False)
+        self.conntabs.setTabsClosable(True)
+        self.conntabs.setMovable(True)
+        self.conntabs.setObjectName("conntabs")
         # conn tab
-        self.vboxlayout.addWidget(self.mainTabs)
+        self.vboxlayout.addWidget(self.conntabs)
 
         MainWindow.setCentralWidget(self.centralWidget)
         # MENUBAR
@@ -64,13 +63,13 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newConnection, 8)
+        self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newconnection, 8)
         self.recentAction = createAction("Recent files", self, "MainWindow", "", self.recent, 8)
 
-        self.newSqlAction = createAction("&New script", self, "MainWindow", "Ctrl+Shift+N", self.newSqlScript, 8)
-        self.openAction = createAction("&Open script", self, "MainWindow", "Ctrl+O", self.openDialog, 8)
-        self.saveAction = createAction("&Save script", self, "MainWindow", "Ctrl+S", self.saveDialog, 8)
-        self.saveAsAction = createAction("&Save As script", self, "MainWindow", "Ctrl+Shift+S", self.saveAsDialog, 8)
+        self.newSqlAction = createAction("&New script", self, "MainWindow", "Ctrl+Shift+N", self.newscript, 8)
+        self.openAction = createAction("&Open script", self, "MainWindow", "Ctrl+O", self.opendialog, 8)
+        self.saveAction = createAction("&Save script", self, "MainWindow", "Ctrl+S", self.savedialog, 8)
+        self.saveAsAction = createAction("&Save As script", self, "MainWindow", "Ctrl+Shift+S", self.saveasdialog, 8)
 
         self.fileMenu.addAction(self.newConnAction)
         self.fileMenu.addSeparator()
@@ -85,16 +84,17 @@ class Ui_MainWindow(object):
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
         #self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
-        self.searchEditorAction = createAction("&Find and Replace", self, "MainWindow", "Ctrl+F", self.searchEditor, 8)
-        self.formatSqlAction = createAction("&Format SQL", self, "MainWindow", "Ctrl+Shift+F", self.formatSql, 8)
+        self.searcheditorAction = createAction("&Find and Replace", self, "MainWindow", "Ctrl+F", self.searcheditor, 8)
+        self.formatsqlAction = createAction("&Format SQL", self, "MainWindow", "Ctrl+Shift+F", self.formatsql, 8)
         self.commentAction = createAction("&Comment selection", self, "MainWindow", "Ctrl+B", self.comment, 8)
         self.joinlinesAction = createAction("&Join selected Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
         self.splitlinesAction = createAction("&Split selected Lines", self, "MainWindow", "Ctrl+I", self.splitlines, 8)
 
         #self.editMenu.addAction(self.copyAction)
         self.editMenu.addSeparator()
-        self.editMenu.addAction(self.searchEditorAction)
-        self.editMenu.addAction(self.formatSqlAction)
+        self.editMenu.addAction(self.searcheditorAction)
+        self.editMenu.addAction(self.formatsqlAction)
+        #self.commentAction.setShortcutContext(QtCore.Qt.WidgetShortcut)
         self.editMenu.addAction(self.commentAction)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.joinlinesAction)
@@ -103,22 +103,24 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.executeSql, 8)
-        #self.stopExecuteSqlAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopExecuteSql, 8)
-        self.executeToFileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executeToFileSql, 8)
+        self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.execute, 8)
+        self.stopexecuteAction = createAction("&Stop Execute", self, "MainWindow", "Ctrl+Q", self.stopexecute, 8)
+        #self.stopexecuteAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopexecute, 8)
+        self.executetofileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executetofile, 8)
         #self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
-        self.autoCompleteAction = createAction("&Auto Complete", self, "MainWindow", "Ctrl+Space", self.autoComplete, 8)
-        self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showColumnAutoComplete, 8)
-        self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadCatalogCall, 8)
-        self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showCatalogCall, 8)
+        self.showautocompleteAction = createAction("&Auto Complete", self, "MainWindow", "Ctrl+Space", self.showautocomplete, 8)
+        self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showcolumnautocomplete, 8)
+        self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadcatalog, 8)
+        self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showcatalog, 8)
 
         self.actionsMenu.addAction(self.executeAction)
-        #self.actionsMenu.addAction(self.stopExecuteSqlAction)
-        self.actionsMenu.addAction(self.executeToFileAction)
+        self.actionsMenu.addAction(self.stopexecuteAction)
+        #self.actionsMenu.addAction(self.stopexecuteAction)
+        self.actionsMenu.addAction(self.executetofileAction)
         #self.actionsMenu.addAction(self.copytoclipbordAction)
 
         self.actionsMenu.addSeparator()
-        self.actionsMenu.addAction(self.autoCompleteAction)
+        self.actionsMenu.addAction(self.showautocompleteAction)
         #self.actionsMenu.addAction(self.autoColumnCompleteAction)
         self.actionsMenu.addSeparator()
         self.actionsMenu.addAction(self.reloadCatalogAction)
@@ -126,53 +128,53 @@ class Ui_MainWindow(object):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        #self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newConnection, 8)
-        self.toSqlEditorAction = createAction("&SQL Editor", self, "MainWindow", "Alt+M", self.toSqlEditor, 8)
-        self.leftConnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftConnection, 8)
-        self.rightConnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightConnection, 8)
-        self.leftSqlEditAction = createAction("L&eft SQL script", self, "MainWindow", "Alt+Left", self.leftSqlEdit, 8)
-        self.rightSqlEditAction = createAction("R&ight SQL script", self, "MainWindow", "Alt+Right", self.rightSqlEdit, 8)
+        #self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newconnection, 8)
+        self.toeditorAction = createAction("&SQL Editor", self, "MainWindow", "Alt+M", self.toeditor, 8)
+        self.leftconnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftconnection, 8)
+        self.rightconnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightconnection, 8)
+        self.leftscriptAction = createAction("L&eft SQL script", self, "MainWindow", "Alt+Left", self.leftscript, 8)
+        self.rightscriptAction = createAction("R&ight SQL script", self, "MainWindow", "Alt+Right", self.rightscript, 8)
 
-        self.leftPanTableAction = createAction("Le&ft pan Table", self, "MainWindow", "Alt+4", self.leftPanTable, 8)
-        self.rightPanTableAction = createAction("Ri&ght pan Table", self, "MainWindow", "Alt+6", self.rightPanTable, 8)
-        self.downPanTableAction = createAction("Down pan Table", self, "MainWindow", "Alt+2", self.downPanTable, 8)
-        self.upPanTableAction = createAction("Up pan Table", self, "MainWindow", "Alt+8", self.upPanTable, 8)
+        self.leftpantableAction = createAction("Le&ft pan Table", self, "MainWindow", "Alt+4", self.leftpantable, 8)
+        self.rightpantableAction = createAction("Ri&ght pan Table", self, "MainWindow", "Alt+6", self.rightpantable, 8)
+        self.downpantableAction = createAction("Down pan Table", self, "MainWindow", "Alt+2", self.downpantable, 8)
+        self.uppantableAction = createAction("Up pan Table", self, "MainWindow", "Alt+8", self.uppantable, 8)
 
-        self.defaultStretchAction = createAction("Default Stretch Table", self, "MainWindow", "Alt+*", self.defaultStretchCall, 8)
-        self.expandTableAction = createAction("Expand Table", self, "MainWindow", "Alt++", self.expandTableCall, 8)
-        self.shrinkTableAction = createAction("Shrink Table", self, "MainWindow", "Alt+-", self.shrinkTableCall, 8)
+        self.defaultStretchAction = createAction("Default Stretch Table", self, "MainWindow", "Alt+*", self.defaultstretch, 8)
+        self.expandTableAction = createAction("Expand Table", self, "MainWindow", "Alt++", self.expandtable, 8)
+        self.shrinkTableAction = createAction("Shrink Table", self, "MainWindow", "Alt+-", self.shrinktable, 8)
 
 
         #self.navigateMenu.addAction(self.toConsoleAction)
-        self.navigateMenu.addAction(self.toSqlEditorAction)
+        self.navigateMenu.addAction(self.toeditorAction)
         self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftConnectionAction)
-        self.navigateMenu.addAction(self.rightConnectionAction)
+        self.navigateMenu.addAction(self.leftconnectionAction)
+        self.navigateMenu.addAction(self.rightconnectionAction)
         self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftSqlEditAction)
-        self.navigateMenu.addAction(self.rightSqlEditAction)
+        self.navigateMenu.addAction(self.leftscriptAction)
+        self.navigateMenu.addAction(self.rightscriptAction)
         self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftPanTableAction)
-        self.navigateMenu.addAction(self.rightPanTableAction)
-        self.navigateMenu.addAction(self.downPanTableAction)
-        self.navigateMenu.addAction(self.upPanTableAction)
+        self.navigateMenu.addAction(self.leftpantableAction)
+        self.navigateMenu.addAction(self.rightpantableAction)
+        self.navigateMenu.addAction(self.downpantableAction)
+        self.navigateMenu.addAction(self.uppantableAction)
         self.navigateMenu.addSeparator()
         self.navigateMenu.addAction(self.defaultStretchAction)
         self.navigateMenu.addAction(self.expandTableAction)
         self.navigateMenu.addAction(self.shrinkTableAction)
-        #self.navigateMenu.addAction(self.rightPanTableAction)
+        #self.navigateMenu.addAction(self.rightpantableAction)
         # ==== ==== ==== ==== ==== ==== ==== ====
         # SETTINGS
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.openSettingsAction = createAction("Open settings", self, "MainWindow", "Ctrl+Alt+S", self.openSettings, 8)
+        self.opensettingsAction = createAction("Open settings", self, "MainWindow", "Ctrl+Alt+S", self.opensettings, 8)
         self.saveSettingsAction = createAction("Save/Reload settings", self, "MainWindow", "", self.saveSettings, 8)
         self.importODBCAction = createAction("Import ODBC connetions into settings", self, "MainWindow", "", self.importODBC, 8)
-        self.openODBCManagerAction = createAction("Open ODBC Manager", self, "MainWindow", "", self.openODBCManager, 8)
+        self.openODBCmanagerAction = createAction("Open ODBC Manager", self, "MainWindow", "", self.openODBCmanager, 8)
 
-        self.settingsMenu.addAction(self.openSettingsAction)
+        self.settingsMenu.addAction(self.opensettingsAction)
         self.settingsMenu.addAction(self.saveSettingsAction)
         self.settingsMenu.addSeparator()
-        self.settingsMenu.addAction(self.openODBCManagerAction)
+        self.settingsMenu.addAction(self.openODBCmanagerAction)
         self.settingsMenu.addAction(self.importODBCAction)
 
         # MENU
@@ -183,25 +185,25 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.settingsMenu.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.mainTabs.setCurrentIndex(0)
+        self.conntabs.setCurrentIndex(0)
 
-        QtCore.QObject.connect(self.mainTabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.mainTabs.removeTab)
+        QtCore.QObject.connect(self.conntabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.conntabs.removeTab)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        self.openWorkspace()
+        self.openworkspace()
         #self.statusBar().showMessage('Ready', 2000)
         #self.setToolTip(QtGui.QToolTip())
 
-    def isConnTabFunc(self):
-        return isinstance(self.mainTabs.currentWidget(), ConnTab)
+    def isConnectionFunc(self):
+        return isinstance(self.conntabs.currentWidget(), Connection)
 
-    class isConnTab(object):
+    class isConnection(object):
         def __init__(self, f):
             self.f = f
 
         def __call__(self, *args):
             print "Entering", self.f.__name__
-            if self.isConnTabFunc():
+            if self.isConnectionFunc():
                 self.f(*args)
             print "Exited", self.f.__name__
 
@@ -209,8 +211,8 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NEW CONN, SQL
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def newConnection(self):
-        self.sett = self.loadSettings()
+    def newconnection(self):
+        self.sett = self.loadsettings()
         connections = sorted(self.sett.settings['connections'].keys())
 
         dialog = NewConnectionDialog(self, self.sett.settings['connections'])
@@ -220,35 +222,35 @@ class Ui_MainWindow(object):
             password = unicode(dialog.passwordEdit.text())
 
             if dialog.savePassword.isChecked():
-                self.sett = self.loadSettings()
+                self.sett = self.loadsettings()
                 self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", password)
                 self.sett.settings['connections'][connection]["password"] = password
                 yaml.dump(self.sett.settings, open("settings.yaml", "w"))
-                self.sett = self.loadSettings()
+                self.sett = self.loadsettings()
 
-            connTab = self.openNewConnection(connection, password, False)
-            connTab.openWorkspace()
-            self.showToolTip("Connection has been opened.")
+            connection = self.opennewconnection(connection, password, False)
+            connection.openworkspace()
+            self.showtooltip("Connection has been opened.")
 
-    def openNewConnection(self, connName, password="", openNewSql=True):
+    def opennewconnection(self, connName, password="", openNewSql=True):
         connSettings = self.sett.settings['connections'].get(connName, {})
-        connTab = ConnTab(parent=self, connName=connName, password=password, connSettings=connSettings)
-        self.mainTabs.addTab(connTab, "")
-        self.mainTabs.setTabText(self.mainTabs.indexOf(connTab), QtGui.QApplication.translate("MainWindow", connName, None, QtGui.QApplication.UnicodeUTF8))
-        self.mainTabs.setTabIcon(self.mainTabs.indexOf(connTab), connTab.icon)
+        connection = Connection(parent=self, connName=connName, password=password, connSettings=connSettings)
+        self.conntabs.addTab(connection, "")
+        self.conntabs.setTabText(self.conntabs.indexOf(connection), QtGui.QApplication.translate("MainWindow", connName, None, QtGui.QApplication.UnicodeUTF8))
+        self.conntabs.setTabIcon(self.conntabs.indexOf(connection), connection.icon)
 
-        self.mainTabs.setCurrentWidget(connTab)
+        self.conntabs.setCurrentWidget(connection)
 
-        QtCore.QObject.connect(connTab.childTabs, QtCore.SIGNAL("tabCloseRequested(int)"), connTab.childTabs.removeTab)
+        QtCore.QObject.connect(connection.scripttabs, QtCore.SIGNAL("tabCloseRequested(int)"), connection.scripttabs.removeTab)
 
         if openNewSql:
-            self.newSqlScript()
+            self.newscript()
 
-        return connTab
+        return connection
 
     def recent(self):
-        tab = self.mainTabs.currentWidget()
-        if isinstance(tab, ConnTab):
+        tab = self.conntabs.currentWidget()
+        if isinstance(tab, Connection):
 
             if os.path.exists("files/recent/%s.pickle" % tab.name):
                 recent = pickle.load(open("files/recent/%s.pickle" % tab.name))
@@ -256,13 +258,13 @@ class Ui_MainWindow(object):
                     "Recent:", sorted(recent, key=recent.get, reverse=True), 0, False)
 
                 if ok and item:
-                    self.mainTabs.currentWidget().newSqlScript(unicode(item))
+                    self.conntabs.currentWidget().newscript(unicode(item))
 
-    def newSqlScript(self, path=None):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().newSqlScript()
+    def newscript(self, path=None):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().newscript()
 
-    def showToolTip(self, text):
+    def showtooltip(self, text):
         p = self.pos()
         p.setX(p.x() + self.width() - (len(text) * 9) - 8)
         p.setY(p.y() + (self.height() - 8))
@@ -273,103 +275,98 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # FILE HANDLING
     # ==== ==== ==== ==== ==== ==== ==== ====
-    #@isConnTab
-    def openDialog(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+    #@isConnection
+    def opendialog(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
             o = QtGui.QFileDialog(self)
-            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().newSqlScript)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.conntabs.currentWidget().newscript)
             o.setAcceptMode(0)
             o.setNameFilter("SQL files (*.sql)");
             o.open()
 
-    def openFile(self, path):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+    def openfile(self, path):
+        if isinstance(self.conntabs.currentWidget(), Connection):
             print path
-            self.mainTabs.currentWidget().openFile(path)
+            self.conntabs.currentWidget().openfile(path)
 
-    def saveDialog(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            sqlTab = self.mainTabs.currentWidget().childTabs.currentWidget()
+    def savedialog(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            script = self.conntabs.currentWidget().scripttabs.currentWidget()
 
-            if sqlTab.saveTo == None:
+            if script.saveTo == None:
                 o = QtGui.QFileDialog(self)
-                QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
+                QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.savefile)
                 o.setAcceptMode(1)
                 o.setNameFilter("SQL files (*.sql)");
                 o.open()
             else:
-                self.saveFile(sqlTab.saveTo)
+                self.savefile(script.saveTo)
 
-    def saveFile(self, s):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            childTabs = self.mainTabs.currentWidget().childTabs
-            #open(s, "w").write(unicode(childTabs.currentWidget().editor.text()).encode("UTF-8"))
-            childTabs.currentWidget().saveFile(s)
+    def savefile(self, s):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            scripttabs = self.conntabs.currentWidget().scripttabs
+            #open(s, "w").write(unicode(scripttabs.currentWidget().editor.text()).encode("UTF-8"))
+            scripttabs.currentWidget().savefile(s)
 
-            childTabs.currentWidget().saveTo = s
-            childTabs.setTabText(childTabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+            scripttabs.currentWidget().saveTo = s
+            scripttabs.setTabText(scripttabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
-            self.showToolTip("Saved.")
+            self.showtooltip("Saved.")
 
-    def saveAsDialog(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+    def saveasdialog(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
             o = QtGui.QFileDialog(self)
             o.setAcceptMode(1)
             o.setNameFilter("SQL files (*.sql)");
-            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.saveFile)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.savefile)
             o.open()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # EDIT
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def copy(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().copytoclipbord()
-            self.showToolTip("Copied.")
-
     def comment(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+        if isinstance(self.conntabs.currentWidget(), Connection):
             print "main.comment"
-            self.mainTabs.currentWidget().childTabs.currentWidget().comment()
+            self.conntabs.currentWidget().scripttabs.currentWidget().editor.comment()
 
-    def searchEditor(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().searchEditor()
+    def searcheditor(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().searcheditor()
 
     def joinlines(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().joinlines()
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().editor.joinlines()
 
     def splitlines(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().splitlines()
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().editor.splitlines()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def toSqlEditor(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().editor.setFocus()
+    def toeditor(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().editor.setFocus()
 
      # CONN, SQL
-    def leftConnection(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.setCurrentIndex(self.mainTabs.currentIndex() - 1)
+    def leftconnection(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.setCurrentIndex(self.conntabs.currentIndex() - 1)
 
-    def rightConnection(self):
-        self.mainTabs.setCurrentIndex(self.mainTabs.currentIndex() + 1)
+    def rightconnection(self):
+        self.conntabs.setCurrentIndex(self.conntabs.currentIndex() + 1)
 
-    def leftSqlEdit(self):
-        childTabs = self.mainTabs.currentWidget().childTabs
-        childTabs.setCurrentIndex(childTabs.currentIndex() - 1)
+    def leftscript(self):
+        scripttabs = self.conntabs.currentWidget().scripttabs
+        scripttabs.setCurrentIndex(scripttabs.currentIndex() - 1)
 
-    def rightSqlEdit(self):
-        childTabs = self.mainTabs.currentWidget().childTabs
-        childTabs.setCurrentIndex(childTabs.currentIndex() + 1)
+    def rightscript(self):
+        scripttabs = self.conntabs.currentWidget().scripttabs
+        scripttabs.setCurrentIndex(scripttabs.currentIndex() + 1)
 
     # TABLE
-    def panTable(self, x, y):
-        table = self.mainTabs.currentWidget().childTabs.currentWidget().table
+    def pantable(self, x, y):
+        table = self.conntabs.currentWidget().scripttabs.currentWidget().table
 
         horizontal = table.horizontalScrollBar()
         vertical = table.verticalScrollBar()
@@ -377,80 +374,81 @@ class Ui_MainWindow(object):
         horizontal.setValue(horizontal.value() + x)
         vertical.setValue(vertical.value() + y)
 
-    def leftPanTable(self):
-        self.panTable(-1, 0)
+    def leftpantable(self):
+        self.pantable(-1, 0)
 
-    def rightPanTable(self):
-        self.panTable(1, 0)
+    def rightpantable(self):
+        self.pantable(1, 0)
 
-    def upPanTable(self):
-        self.panTable(0, -1)
+    def uppantable(self):
+        self.pantable(0, -1)
 
-    def downPanTable(self):
-        self.panTable(0, 1)
+    def downpantable(self):
+        self.pantable(0, 1)
 
-    def defaultStretchCall(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().defaultStretch()
+    def defaultstretch(self):
+        self.conntabs.currentWidget().scripttabs.currentWidget().defaultStretch()
 
-    def expandTableCall(self):
-        self.mainTabs.currentWidget().childTabs.currentWidget().expandTable()
+    def expandtable(self):
+        self.conntabs.currentWidget().scripttabs.currentWidget().expandTable()
 
-    def shrinkTableCall(self):
-            self.mainTabs.currentWidget().childTabs.currentWidget().shrinkTable()
+    def shrinktable(self):
+            self.conntabs.currentWidget().scripttabs.currentWidget().shrinkTable()
     # ==== ==== ==== ==== ==== ==== ==== ====
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def executeSql(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.saveWorkspace()
+    def execute(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().saveworkspace()
             startTime = time.time()
-            self.mainTabs.currentWidget().childTabs.currentWidget().execute()
-            #self.showToolTip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
+            self.conntabs.currentWidget().scripttabs.currentWidget().execute()
+            #self.showtooltip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
-    def stopExecuteSql(self):
-        self.mainTabs.currentWidget().executeThread.stop()
+    def stopexecute(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().stopexecute()
 
-    def executeToFileSql(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.saveWorkspace()
+    def executetofile(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().saveworkspace()
             o = QtGui.QFileDialog(self)
             o.setAcceptMode(1)
-            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.mainTabs.currentWidget().childTabs.currentWidget().executeToFile)
+            QtCore.QObject.connect(o, QtCore.SIGNAL("fileSelected(QString)"), self.conntabs.currentWidget().scripttabs.currentWidget().executetofile)
             o.open()
 
     def copytoclipbord(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().copytoclipbord()
-            self.showToolTip("Selection copied.")
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().copytoclipbord()
+            self.showtooltip("Selection copied.")
 
-    def autoComplete(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().showAutoComplete()
+    def showautocomplete(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().showautocomplete()
+    # deprecated
+    def showcolumnautocomplete(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().showcolumnautocomplete()
 
-    def showColumnAutoComplete(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().showColumnAutoComplete()
+    def formatsql(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().scripttabs.currentWidget().editor.formatsql()
+            self.showtooltip("Sql has been formated.")
 
-    def formatSql(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().childTabs.currentWidget().formatSql()
-            self.showToolTip("Sql has been formated.")
-
-    def reloadCatalogCall(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
+    def reloadcatalog(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
             startTime = time.time()
-            self.mainTabs.currentWidget().reloadCatalog()
-            self.showToolTip("Catalog has been reloadet in %s seconds for %s tables."
+            self.conntabs.currentWidget().reloadcatalog()
+            self.showtooltip("Catalog has been reloadet in %s seconds for %s tables."
                                 % (round(time.time() - startTime, 4),
-                                len(self.mainTabs.currentWidget().catalog)))
+                                len(self.conntabs.currentWidget().catalog)))
 
-    def showCatalogCall(self):
-        if isinstance(self.mainTabs.currentWidget(), ConnTab):
-            self.mainTabs.currentWidget().showCatalog()
+    def showcatalog(self):
+        if isinstance(self.conntabs.currentWidget(), Connection):
+            self.conntabs.currentWidget().showcatalog()
     # ==== ==== ==== ==== ==== ==== ==== ====
     # SETTINGS
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def loadSettings(self):
+    def loadsettings(self):
         sett = Settings("settings.yaml")
         message = sett.load()
 
@@ -458,35 +456,32 @@ class Ui_MainWindow(object):
             warningMessage("Settings load ERROR.", message[1])
         return sett
 
-    def openSettings(self):
+    def opensettings(self):
         settingsTab = SettingsTab(self, 'settings.yaml')
-        self.mainTabs.addTab(settingsTab, "")
-        self.mainTabs.setTabText(self.mainTabs.indexOf(settingsTab), QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
-        self.mainTabs.setTabIcon(self.mainTabs.indexOf(settingsTab), settingsTab.icon)
-        self.mainTabs.setCurrentWidget(settingsTab)
+        self.conntabs.addTab(settingsTab, "")
+        self.conntabs.setTabText(self.conntabs.indexOf(settingsTab), QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
+        self.conntabs.setTabIcon(self.conntabs.indexOf(settingsTab), settingsTab.icon)
+        self.conntabs.setCurrentWidget(settingsTab)
 
     def saveSettings(self):
-        if isinstance(self.mainTabs.currentWidget(), SettingsTab):
+        if isinstance(self.conntabs.currentWidget(), SettingsTab):
             print "saveSettings"
-            self.mainTabs.currentWidget().save()
-            self.sett = self.loadSettings()
-            self.showToolTip("Settings have been saved and reloadet.")
+            self.conntabs.currentWidget().save()
+            self.sett = self.loadsettings()
+            self.showtooltip("Settings have been saved and reloadet.")
 
     # use decorator?
     def importODBC(self):
-        if isinstance(self.mainTabs.currentWidget(), SettingsTab):
+        if isinstance(self.conntabs.currentWidget(), SettingsTab):
             odbc = dataSources()
 
             for conn in odbc:
                 if conn not in self.sett.settings['connections']:
-                    settingsEditor = self.mainTabs.currentWidget().editor
-##                    s = "    %s:  #[%s]\n" % (conn, odbc[conn])
-##                    for i, j in zip(["#schema", "password"], ["if_needet", "ENTER_IT"]):
-##                        s += "        %s: %s\n" % (i, j)
+                    settingsEditor = self.conntabs.currentWidget().editor
                     s = "  %s: {password: ENTER_IT}" % (conn)
                     settingsEditor.setText(settingsEditor.text() + "\n" + s)
 
-    def openODBCManager(self):
+    def openODBCmanager(self):
         try:
             Popen(["odbcad32.exe"])
         except:
@@ -495,19 +490,19 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # WORKSPACE
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def saveWorkspace(self):
-        print "saveWorkspace"
+    def saveworkspace(self):
+        print "saveworkspace"
         workspace = []
-        for tabIndex in range(self.mainTabs.count()):
-            tab = self.mainTabs.widget(tabIndex)
-            if isinstance(tab, ConnTab):
-                tab.saveWorkspace()
+        for tabIndex in range(self.conntabs.count()):
+            tab = self.conntabs.widget(tabIndex)
+            if isinstance(tab, Connection):
+                tab.saveworkspace()
                 workspace.append(tab.name)
 
         yaml.dump(workspace, open("files/workspace.yaml", "w"))
 
-    def openWorkspace(self):
-        print "#OpenWorkspace"
+    def openworkspace(self):
+        print "#openworkspace"
         if os.path.exists("files/workspace.yaml"):
             try:
                 workspace = yaml.load(open("files/workspace.yaml"))
@@ -520,19 +515,19 @@ class Ui_MainWindow(object):
                     print connName
                     try:
                         password = self.sett.settings['connections'].get(connName, {}).get("password", "")
-                        connTab = self.openNewConnection(connName, password,  False)
-                        connTab.openWorkspace()
+                        connection = self.opennewconnection(connName, password,  False)
+                        connection.openworkspace()
 
                     except Exception as exc:
                         warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
 
-    def closeEvent(self, event):
+    def closeevent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
         reply = QtGui.QMessageBox.question(self, 'Quit?',
                          quit_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 
         if reply == QtGui.QMessageBox.Yes:
-            self.saveWorkspace()
+            self.saveworkspace()
             event.accept()
         else:
             event.ignore()
