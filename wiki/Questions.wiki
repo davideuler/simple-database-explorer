@@ -1,0 +1,7 @@
+#summary One-sentence summary of this page.
+
+= Questions=
+
+  * Debuging threads
+  * Documentation. In code, UML?
+  * Fixed or dynamic gui? How to make references?
