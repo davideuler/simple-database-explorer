@@ -398,7 +398,7 @@ class Ui_MainWindow(object):
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
     def execute(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
+        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
             self.conntabs.currentWidget().saveworkspace()
             startTime = time.time()
             self.conntabs.currentWidget().scripttabs.currentWidget().execute()
@@ -409,7 +409,7 @@ class Ui_MainWindow(object):
             self.conntabs.currentWidget().scripttabs.currentWidget().stopexecute()
 
     def executetofile(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
+        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
             self.conntabs.currentWidget().saveworkspace()
             o = QtGui.QFileDialog(self)
             o.setAcceptMode(1)
@@ -521,7 +521,7 @@ class Ui_MainWindow(object):
                     except Exception as exc:
                         warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
 
-    def closeevent(self, event):
+    def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
         reply = QtGui.QMessageBox.question(self, 'Quit?',
                          quit_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)

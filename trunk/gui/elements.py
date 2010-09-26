@@ -589,10 +589,6 @@ class Connection(QtGui.QWidget):
         self.password = password
 
         self.openconnection()
-        # AUTO COMPLETE
-        self.loadcatalog()
-        self.seticon()
-
         # conn tab
         self.verticalLayout_3 = QtGui.QVBoxLayout()
         self.verticalLayout_3.setSpacing(2)
@@ -608,6 +604,10 @@ class Connection(QtGui.QWidget):
         # layout
         self.verticalLayout_3.addWidget(self.scripttabs)
         self.setLayout(self.verticalLayout_3)
+
+        # AUTO COMPLETE
+        self.loadcatalog()
+        self.seticon()
 
     def openconnection(self):
         try:
@@ -650,6 +650,9 @@ class Connection(QtGui.QWidget):
     def reloadcatalog(self):
         self.catalog = self.getcatalog()
         self.savecatalog()
+        # rebuild editor API for autocomplete
+        for scriptIndex in range(0, self.scripttabs.count()):
+            self.scripttabs.widget(scriptIndex).editor.setautocomplete(self.catalog.keys())
 
     def savecatalog(self):
         pickle.dump(self.catalog, open("files/cache/%s.pickle" % self.name, "w"))
