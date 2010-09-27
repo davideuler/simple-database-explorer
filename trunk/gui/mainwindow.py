@@ -435,7 +435,7 @@ class Ui_MainWindow(object):
             self.showtooltip("Sql has been formated.")
 
     def reloadcatalog(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
+        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
             startTime = time.time()
             self.conntabs.currentWidget().reloadcatalog()
             self.showtooltip("Catalog has been reloadet in %s seconds for %s tables."
