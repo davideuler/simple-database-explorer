@@ -10,6 +10,12 @@ from pyodbc import dataSources
 from subprocess import Popen
 
 class Ui_MainWindow(object):
+    """ Sets up the main window of SDBE. It sets a :
+         - menu bar
+         - a tabs widget (for connections)
+
+        Almost all action go thru the Menu bar. It a centralized action base :)
+    """
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(808, 600)

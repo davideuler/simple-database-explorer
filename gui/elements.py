@@ -19,6 +19,9 @@ from dialogs import *
 from general import *
 
 class QueryResult:
+    """
+        This class saves one query result, status, sql, time and possible errors
+    """
     def __init__(self, query, status, sql="", rows=-1, time=-1, errorcode="", error=""):
         self.query = query
         self.status = status
@@ -29,15 +32,22 @@ class QueryResult:
         self.sql = sql
 
     def toarray(self):
+        """ function to print the query result in the gui table with printMessage """
         return [self.status, self.rows, self.time, self.errorcode, self.error, self.sql]
 
 class ExecuteThread(QtCore.QThread):
+    """
+        Class executes one select query and returns the resulting rows inside QueryResult
+    """
     def __init__(self, parent=None):
        QtCore.QThread.__init__(self, parent)
        self.script = parent
        self.result = None
 
     def run(self):
+        """ runs the thread that only executes the query and sets the QueryResult.
+            It emits a finish signal so the gui knows the query is complete and can unlock the connection.
+        """
         try:
             sql = self.script.editor.getsql()
             startTime = time.time()
@@ -50,6 +60,13 @@ class ExecuteThread(QtCore.QThread):
             self.emit(QtCore.SIGNAL('finished'))
 
 class ExecuteManyThread(QtCore.QThread):
+    """ runs a thread with multiple sql statements and stores the results in a list of QueryResults.
+        - each time a sql is executed it emits a 'executed' signal that print the currently executed statements.
+        - when all the sql statements are executed a 'finished' signal tells the gui to unlock the gui.
+
+        We dont call the printMessage directly cuz of Qt limitation of creating childs in another thread.
+        Signals are the adviced approch to work around this limitation.
+    """
     def __init__(self, parent=None):
        QtCore.QThread.__init__(self, parent)
        self.script = parent
@@ -87,23 +104,30 @@ class ExecuteManyThread(QtCore.QThread):
         return self.printTable + self.results
 
 class Editor(Qsci.QsciScintilla):
+    """
+        Class thats add extra functions to the Qt Scintilla implementation.
+         - some extra fuctions to make editing easier
+         - some user friendly functionalyt: comment, join split lines, ctrl+whell mouse zoom
+         - we set autocomplete from templates and tables names
+    """
     def __init__(self, parent=None):
         super(Editor, self).__init__(parent)
 
-        self.setToolTip("SQL editor")
-        self.setWhatsThis("")
+        #self.setToolTip("SQL editor")
+        #self.setWhatsThis("")
         self.setObjectName("sqleditor")
         self.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
-        #self.setLexer(Qsci.QsciLexerSQL())
-        #fm = QtGui.QFontMetrics(getFont(6))
         self.setFont(getFont(12))
+        self.setUtf8(True)
+        self.setWrapMode(Qsci.QsciScintilla.WrapWord)
         #self.setMarginsFont(getFont(7))
-        # LINE NUMBERS
+        ## line numbers
         #self.setMarginWidth(0, fm.width( "0000" ) + 2)
         #self.setMarginLineNumbers(2, True)
         self.setCaretLineVisible(False)
-        # Folding visual : we will use boxes, Braces matching
+        ## Folding visual : we will use boxes, Braces matching
         self.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
+        self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
         self.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
         ## Editing line color
         self.setCaretLineVisible(True)
@@ -111,28 +135,20 @@ class Editor(Qsci.QsciScintilla):
         ## Marker (bookmarks)
         self.setMarkerBackgroundColor(QtGui.QColor("#663854"))
         self.setMarkerForegroundColor(QtGui.QColor("#006B3C"))
-        ## line numbers margin
+        ## Line numbers margin
         self.setMarginsBackgroundColor(QtGui.QColor("#F8F4FF"))
         self.setMarginsForegroundColor(QtGui.QColor("#663854"))
-
-        # folding margin colors (foreground,background)
-        self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
-
+        ## Indentation
         self.setAutoIndent(True)
         self.setIndentationWidth(4)
         self.setIndentationGuides(1)
         self.setIndentationsUseTabs(0)
-
-        self.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
-        self.setCallTipsVisible(False)
-        self.setUtf8(True)
-        self.setWrapMode(Qsci.QsciScintilla.WrapWord)
-
-        self.setautocomplete()
-
         unindentshortcut = QtGui.QShortcut(QtGui.QKeySequence("Shift+Tab"), self, self.unindenttext)
         unindentshortcut.setContext(QtCore.Qt.WidgetShortcut)
 
+        self.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
+        self.setCallTipsVisible(False)
+        self.setautocomplete()
 
     def getselection(self, linefrom, indexfrom, lineto, indexto):
         cursorPosition = self.getCursorPosition()
@@ -262,6 +278,7 @@ class Editor(Qsci.QsciScintilla):
             vertical.setValue(vertical.value() - int(event.delta() / 20))
 
 class Table(QtGui.QTableView):
+    """  QTableView with default settings and copytoclipbord function """
     def __init__(self, parent=None):
         super(Table, self).__init__(parent)
 
@@ -595,6 +612,13 @@ class Script(QtGui.QWidget):
 
 
 class Connection(QtGui.QWidget):
+    """
+        Implement all the logic for one single connection
+        - connect, reconnect
+        - catalog load and save
+        - workspace per connection...
+        - managing scripts
+    """
     def __init__(self, parent=None, connName='', password="", connSettings=None):
         super(Connection, self).__init__(parent)
 
