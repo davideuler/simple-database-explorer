@@ -509,6 +509,7 @@ class Ui_MainWindow(object):
             except Exception as exc:
                 warningMessage("Error at loading workspace!", unicode(exc.args))
                 workspace = list()
+                self.newconnection()
 
             if workspace != None:
                 for connName in workspace:
@@ -520,6 +521,8 @@ class Ui_MainWindow(object):
 
                     except Exception as exc:
                         warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
+                if len(workspace) == 0:
+                    self.newconnection()
 
     def closeEvent(self, event):
         quit_msg = "Are you sure you want to exit the program?"
