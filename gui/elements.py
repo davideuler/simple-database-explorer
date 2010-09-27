@@ -276,7 +276,7 @@ class Table(QtGui.QTableView):
         self.setWordWrap(True)
         self.verticalHeader().setDefaultSectionSize(20)
         self.verticalHeader().setMinimumSectionSize(16)
-        #self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) #disable editing
+        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) #disable editing
 
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, self.copytoclipbord)
         shortcut.setContext(QtCore.Qt.WidgetShortcut)
@@ -458,8 +458,11 @@ class Script(QtGui.QWidget):
         if not self.connection.conn:
             self.connection.openconnection()
 
+        print len(sqlparsed)
+        print sqlparsed
+
         if len(sqlparsed) > 0:
-            if len(sqlparsed) == 1 and sqlparsed[0].startswith('SELECT'):
+            if len(sqlparsed) == 1 and sqlparsed[0].upper().startswith('SELECT'):
                 self.locktab()
                 self.executeThread = ExecuteThread(self)
                 self.connect(self.executeThread, QtCore.SIGNAL('finished()'), self.postexecute)
@@ -509,6 +512,15 @@ class Script(QtGui.QWidget):
 
     def locktab(self):
         self.connection.setDisabled(True)
+        palette = QtGui.QPalette()
+
+
+        brush = QtGui.QBrush(QtGui.QColor("#E3F6CE"))
+        brush.setStyle(QtCore.Qt.SolidPattern)
+
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Base, brush)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Window, brush)
+        self.table.setPalette(palette)
         #self.connTab.seticon("files/icons/DeletedIcon.ico")
 
     def showworking(self):
@@ -547,7 +559,10 @@ class Script(QtGui.QWidget):
             self.printmessage(printTable)
 
     def unlocktab(self):
+
         self.connection.setDisabled(False)
+        self.editor.setFocus()
+
 
     def maybefetchmore(self, value):
         if self.fetchedall == False:

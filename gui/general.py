@@ -1,4 +1,4 @@
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 import pyodbc
 from decimal import Decimal
 import sqlite3
@@ -45,9 +45,14 @@ def convertforQt(x):
         pyodbc.DATETIME is <type 'datetime.datetime'>
         pyodbc.Time is <type 'datetime.time'>
         decimal.Decimal is <class 'decimal.Decimal'>
+        pyodbc.NUMBER is <type 'float'>
     """
-    if isinstance(x, pyodbc.NUMBER) or isinstance(x, pyodbc.ROWID) or isinstance(x, pyodbc.STRING):
+    if isinstance(x, pyodbc.ROWID) or isinstance(x, pyodbc.STRING):
         return x
+    # TODO: not good :P
+    elif isinstance(x, pyodbc.NUMBER): #float
+        #print "float"
+        return str(x) #str(x) QtCore.QVariant(x)
     elif isinstance(x, Decimal):
         # TODO: make it faster.. u know the types from cursor.desc...
         if int(x) == float(x):
