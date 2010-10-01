@@ -2,7 +2,6 @@ from PyQt4 import QtCore, QtGui, Qsci
 import yaml
 from yaml.parser import ParserError
 import pickle
-import gc
 import time
 import sqlparse
 import re
