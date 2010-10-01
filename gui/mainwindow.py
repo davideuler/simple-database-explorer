@@ -40,6 +40,10 @@ class Ui_MainWindow(object):
         self.conntabs.setTabsClosable(True)
         self.conntabs.setMovable(True)
         self.conntabs.setObjectName("conntabs")
+        #foo = QtGui.QVBoxLayout()
+        #self.connection.scripttabs.children()[1].setLayout(foo)
+        #self.connection.scripttabs.children()[1].layout().addWidget(QtGui.QLabel("sdflj"))
+
         # conn tab
         self.vboxlayout.addWidget(self.conntabs)
 
