@@ -654,7 +654,7 @@ class Connection(QtGui.QWidget):
             self.cursor = self.conn.cursor()
         except Exception as exc:
             self.conn = None
-            warningMessage("Error opening connection: %s" % connName, unicode(exc.args))
+            warningMessage("Error opening connection: %s" % self.name, unicode(exc.args))
 
     def seticon(self, path=None):
         if path == None:

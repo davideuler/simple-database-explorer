@@ -1,21 +1,13 @@
 #!/usr/bin/env python
 
 #irc://irc.freenode.net/pyqt
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 import sys
-from gui.mainwindow import Ui_MainWindow
-
-
-class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
-    def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
-        self.setupUi(self)
-
+from gui.mainwindow import Sdbe
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    window = MainWindow()
+    window = Sdbe()
     window.show()
 
     sys.exit(app.exec_())
-
