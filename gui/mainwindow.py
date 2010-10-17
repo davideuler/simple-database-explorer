@@ -9,24 +9,27 @@ import datetime
 from pyodbc import dataSources
 from subprocess import Popen
 
-class Ui_MainWindow(object):
+class Sdbe(QtGui.QMainWindow):
     """ Sets up the main window of SDBE. It sets a :
          - menu bar
          - a tabs widget (for connections)
 
         Almost all action go thru the Menu bar. It a centralized action base :)
     """
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(808, 600)
+
+    #Qt.FramelessWindowHint	0x00000800	Produces a borderless window. The user cannot move or resize a borderless window via the window system. On X11, the result of the flag is dependent on the window manager and its ability to understand Motif and/or NETWM hints. Most existing modern window managers can handle this.
+    def __init__(self, parent=None):
+        super(QtGui.QMainWindow, self).__init__(parent)
+        self.setObjectName("SDBE")
+        self.resize(808, 600)
         # SETTINGS
         self.sett = self.loadsettings()
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("files/icons/sdbe.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        MainWindow.setWindowIcon(icon)
+        self.setWindowIcon(icon)
 
-        self.centralWidget = QtGui.QWidget(MainWindow)
+        self.centralWidget = QtGui.QWidget(self)
         self.centralWidget.setObjectName("centralWidget")
         self.vboxlayout = QtGui.QVBoxLayout(self.centralWidget)
         self.vboxlayout.setSpacing(0)
@@ -47,9 +50,9 @@ class Ui_MainWindow(object):
         # conn tab
         self.vboxlayout.addWidget(self.conntabs)
 
-        MainWindow.setCentralWidget(self.centralWidget)
+        self.setCentralWidget(self.centralWidget)
         # MENUBAR
-        self.menubar = QtGui.QMenuBar(MainWindow)
+        self.menubar = QtGui.QMenuBar(self)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 808, 20))
         self.menubar.setFont(getFont(7))
         self.fileMenu = QtGui.QMenu(self.menubar)
@@ -57,7 +60,7 @@ class Ui_MainWindow(object):
         self.actionsMenu = QtGui.QMenu(self.menubar)
         self.navigateMenu = QtGui.QMenu(self.menubar)
         self.settingsMenu = QtGui.QMenu(self.menubar)
-        MainWindow.setMenuBar(self.menubar)
+        self.setMenuBar(self.menubar)
 
         # #####################################
         # ACTIONS
@@ -194,11 +197,11 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.navigateMenu.menuAction())
         self.menubar.addAction(self.settingsMenu.menuAction())
 
-        self.retranslateUi(MainWindow)
+        self.retranslateUi()
         self.conntabs.setCurrentIndex(0)
 
         QtCore.QObject.connect(self.conntabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.conntabs.removeTab)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(self)
 
         self.openworkspace()
         #self.statusBar().showMessage('Ready', 2000)
@@ -548,8 +551,8 @@ class Ui_MainWindow(object):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # OTHER
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Simple database explorer", None, QtGui.QApplication.UnicodeUTF8))
+    def retranslateUi(self):
+        self.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Simple database explorer", None, QtGui.QApplication.UnicodeUTF8))
 
         self.fileMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&File", None, QtGui.QApplication.UnicodeUTF8))
         self.editMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Edit", None, QtGui.QApplication.UnicodeUTF8))
