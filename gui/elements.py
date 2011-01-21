@@ -182,7 +182,7 @@ class Editor(Qsci.QsciScintilla):
         return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip())
 
     def getparsedsql(self):
-        return [i.strip() for i in self.getsql().split(";") if i != '']
+        return [i.strip() for i in sqlparse.split(self.getsql()) if i != '']
 
     def setsql(self, sql):
         if self.hasSelectedText():

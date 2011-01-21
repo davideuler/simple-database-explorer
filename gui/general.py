@@ -14,11 +14,13 @@ def getFont(size):
 
 def setClipboard(text):
     try:
-        import win32clipboard
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardText(text)
-        win32clipboard.CloseClipboard()
+##        import win32clipboard
+##        win32clipboard.OpenClipboard()
+##        win32clipboard.EmptyClipboard()
+##        win32clipboard.SetClipboardText(text)
+##        win32clipboard.CloseClipboard()
+        clipboard = QtGui.QApplication.clipboard()
+        clipboard.setText(text)
     except:
         print 'Could not copy clipboard data.'
 
