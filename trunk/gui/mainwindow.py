@@ -203,7 +203,8 @@ class Sdbe(QtGui.QMainWindow):
         QtCore.QObject.connect(self.conntabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.conntabs.removeTab)
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        self.openworkspace()
+        #self.openworkspace()
+        QtCore.QTimer.singleShot(0, self.openworkspace)
         #self.statusBar().showMessage('Ready', 2000)
         #self.setToolTip(QtGui.QToolTip())
 
@@ -531,6 +532,7 @@ class Sdbe(QtGui.QMainWindow):
                         password = self.sett.settings['connections'].get(connName, {}).get("password", "")
                         connection = self.opennewconnection(connName, password,  False)
                         connection.openworkspace()
+                        #QtCore.QTimer.singleShot(1, connection.openworkspace)
 
                     except Exception as exc:
                         warningMessage("Error loading workspace for conn: %s" % connName, unicode(exc.args))
