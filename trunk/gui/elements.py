@@ -247,6 +247,9 @@ class Editor(Qsci.QsciScintilla):
                 if items != None:
                     for i in items:
                         templates[i] = items[i]
+                        templates[i.lower()] = items[i].lower()
+            else:
+                open("files/templates/%s" % name, "w").write('')
 
         for i in templates:
             self.api.add(templates[i])
@@ -335,12 +338,14 @@ class Script(QtGui.QWidget):
         self.fetchto = 0
         self.model = QtGui.QStandardItemModel(0, 0)
 
+
         self.horizontalLayout = QtGui.QHBoxLayout(self)
         self.horizontalLayout.setSpacing(1)
         self.horizontalLayout.setMargin(1)
         #       text
         self.editor = Editor(self)
         self.editor.setautocomplete(self.connection.catalog.keys())
+        self.findDialog = FindDialog(self)
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userlistselected)
 
         # ===============================================
@@ -359,8 +364,9 @@ class Script(QtGui.QWidget):
 
 
     def searcheditor(self):
-        dialog = FindDialog(self)
-        dialog.exec_()
+        #dialog = FindDialog(self)
+        self.findDialog.show()
+        #dialog.exec_()
 
     def defaultStretch(self):
         self.splitter.setSizes([200, 200])

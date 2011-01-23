@@ -21,7 +21,9 @@ class Sdbe(QtGui.QMainWindow):
     def __init__(self, parent=None):
         super(QtGui.QMainWindow, self).__init__(parent)
         self.setObjectName("SDBE")
-        self.resize(808, 600)
+        #self.resize(808, 600)
+        settings = QtCore.QSettings()
+        self.restoreGeometry(settings.value("Geometry").toByteArray())
         # SETTINGS
         self.sett = self.loadsettings()
 
@@ -43,9 +45,6 @@ class Sdbe(QtGui.QMainWindow):
         self.conntabs.setTabsClosable(True)
         self.conntabs.setMovable(True)
         self.conntabs.setObjectName("conntabs")
-        #foo = QtGui.QVBoxLayout()
-        #self.connection.scripttabs.children()[1].setLayout(foo)
-        #self.connection.scripttabs.children()[1].layout().addWidget(QtGui.QLabel("sdflj"))
 
         # conn tab
         self.vboxlayout.addWidget(self.conntabs)
@@ -62,133 +61,83 @@ class Sdbe(QtGui.QMainWindow):
         self.settingsMenu = QtGui.QMenu(self.menubar)
         self.setMenuBar(self.menubar)
 
-        # #####################################
-        # ACTIONS
-        # #####################################
-        def createAction(name, parent, parentName, shortcut, triggered, fontSize=10):
-            new = QtGui.QAction(name, parent,
-                shortcut=shortcut, triggered=triggered)
-            new.setText(QtGui.QApplication.translate(parentName, name, None, QtGui.QApplication.UnicodeUTF8))
-            new.setFont(getFont(fontSize))
-
-            return new
-
         # ==== ==== ==== ==== ==== ==== ==== ====
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.newConnAction = createAction("&New Connection", self, "MainWindow", "Ctrl+N", self.newconnection, 8)
-        self.recentAction = createAction("Recent files", self, "MainWindow", "", self.recent, 8)
+        #d:\dev\sdbe\files\icons\milky\130.png
+        self.newconn_action = self.createAction("&New Connection", self.newconnection, "Ctrl+N", "130")
+        self.recent_action = self.createAction("Recent files", self.recent, "", "44")
+        self.newsql_action = self.createAction("&New script", self.newscript, "Ctrl+Shift+N", "8")
+        self.open_action = self.createAction("&Open script", self.opendialog, "Ctrl+O", "119")
+        self.save_action = self.createAction("&Save script", self.savedialog, "Ctrl+S", "7")
+        self.saveas_action = self.createAction("&Save As script", self.saveasdialog, "Ctrl+Shift+S", "131")
 
-        self.newSqlAction = createAction("&New script", self, "MainWindow", "Ctrl+Shift+N", self.newscript, 8)
-        self.openAction = createAction("&Open script", self, "MainWindow", "Ctrl+O", self.opendialog, 8)
-        self.saveAction = createAction("&Save script", self, "MainWindow", "Ctrl+S", self.savedialog, 8)
-        self.saveAsAction = createAction("&Save As script", self, "MainWindow", "Ctrl+Shift+S", self.saveasdialog, 8)
 
-        self.fileMenu.addAction(self.newConnAction)
-        self.fileMenu.addSeparator()
-        self.fileMenu.addAction(self.recentAction)
-        self.fileMenu.addSeparator()
-        self.fileMenu.addAction(self.newSqlAction)
-        self.fileMenu.addAction(self.openAction)
-        self.fileMenu.addAction(self.saveAction)
-        self.fileMenu.addAction(self.saveAsAction)
+        self.addActions(self.fileMenu, ( self.newconn_action, None, self.recent_action, None,
+                                        self.newsql_action, self.open_action, self.save_action,
+                                        self.saveas_action ))
 
         # ==== ==== ==== ==== ==== ==== ==== ====
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
-        #self.copyAction = createAction("&Copy", self, "MainWindow", "Ctrl+C", self.copy, 8)
-        self.searcheditorAction = createAction("&Find and Replace", self, "MainWindow", "Ctrl+F", self.searcheditor, 8)
-        self.formatsqlAction = createAction("&Format SQL", self, "MainWindow", "Ctrl+Shift+F", self.formatsql, 8)
-        self.commentAction = createAction("&Comment selection", self, "MainWindow", "Ctrl+B", self.comment, 8)
-        self.joinlinesAction = createAction("&Join selected Lines", self, "MainWindow", "Ctrl+J", self.joinlines, 8)
-        self.splitlinesAction = createAction("&Split selected Lines", self, "MainWindow", "Ctrl+I", self.splitlines, 8)
+        self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, "Ctrl+F", "16")
+        self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
+        self.comment_action = self.createAction("&Comment selection", self.comment, "Ctrl+B", "38")
+        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
+        self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
-        #self.editMenu.addAction(self.copyAction)
-        self.editMenu.addSeparator()
-        self.editMenu.addAction(self.searcheditorAction)
-        self.editMenu.addAction(self.formatsqlAction)
-        #self.commentAction.setShortcutContext(QtCore.Qt.WidgetShortcut)
-        self.editMenu.addAction(self.commentAction)
-        self.editMenu.addSeparator()
-        self.editMenu.addAction(self.joinlinesAction)
-        self.editMenu.addAction(self.splitlinesAction)
+        self.addActions(self.editMenu, ( self.searcheditor_action, self.formatsql_action,
+                        self.comment_action, None, self.joinlines_action, self.splitlines_action ))
 
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.executeAction = createAction("&Execute", self, "MainWindow", "Alt+X", self.execute, 8)
-        self.stopexecuteAction = createAction("&Stop Execute", self, "MainWindow", "Ctrl+Q", self.stopexecute, 8)
-        #self.stopexecuteAction = createAction("&Stop Execute", self, "MainWindow", "Esc", self.stopexecute, 8)
-        self.executetofileAction = createAction("&Execute to file", self, "MainWindow", "Alt+Ctrl+X", self.executetofile, 8)
-        #self.copytoclipbordAction = createAction("&Copy table to clipbord", self, "MainWindow", "Alt+C", self.copytoclipbord, 8)
-        self.showautocompleteAction = createAction("&Auto Complete", self, "MainWindow", "Ctrl+Space", self.showautocomplete, 8)
-        self.autoColumnCompleteAction = createAction("&Auto Column Complete", self, "MainWindow", "Alt+K", self.showcolumnautocomplete, 8)
-        self.reloadCatalogAction = createAction("&Reload Catalog", self, "MainWindow", "Ctrl+R", self.reloadcatalog, 8)
-        self.showCatalogAction = createAction("&Show Catalog", self, "MainWindow", "Ctrl+Shift+R", self.showcatalog, 8)
+        self.execute_action = self.createAction("&Execute", self.execute, "Alt+X", "98")
+        self.stopexecute_action = self.createAction("&Stop Execute", self.stopexecute, "Ctrl+Q", "116")
+        self.executetofile_action = self.createAction("&Execute to file", self.executetofile, "Alt+Ctrl+X", "104")
+        self.showautocomplete_action = self.createAction("&Auto Complete", self.showautocomplete, "Ctrl+Space", "3")
+        #self.autocolumncomplete_action = self.createAction("&Auto Column Complete", self.showcolumnautocomplete, "Alt+K")
+        self.reloadcatalog_action = self.createAction("&Reload Catalog", self.reloadcatalog, "Ctrl+R", "35")
+        self.showcatalog_action = self.createAction("&Show Catalog", self.showcatalog, "Ctrl+Shift+R", "36")
 
-        self.actionsMenu.addAction(self.executeAction)
-        self.actionsMenu.addAction(self.stopexecuteAction)
-        #self.actionsMenu.addAction(self.stopexecuteAction)
-        self.actionsMenu.addAction(self.executetofileAction)
-        #self.actionsMenu.addAction(self.copytoclipbordAction)
+        self.addActions(self.actionsMenu, ( self.execute_action, self.stopexecute_action,
+                        self.executetofile_action, None, self.showautocomplete_action,
+                        None, self.reloadcatalog_action, self.showcatalog_action ))
 
-        self.actionsMenu.addSeparator()
-        self.actionsMenu.addAction(self.showautocompleteAction)
-        #self.actionsMenu.addAction(self.autoColumnCompleteAction)
-        self.actionsMenu.addSeparator()
-        self.actionsMenu.addAction(self.reloadCatalogAction)
-        self.actionsMenu.addAction(self.showCatalogAction)
         # ==== ==== ==== ==== ==== ==== ==== ====
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        #self.toConsoleAction = createAction("&Console", self, "MainWindow", "Alt+I", self.newconnection, 8)
-        self.toeditorAction = createAction("&SQL Editor", self, "MainWindow", "Alt+M", self.toeditor, 8)
-        self.leftconnectionAction = createAction("&Left Connection", self, "MainWindow", "Alt+Down", self.leftconnection, 8)
-        self.rightconnectionAction = createAction("&Right Connection", self, "MainWindow", "Alt+Up", self.rightconnection, 8)
-        self.leftscriptAction = createAction("L&eft SQL script", self, "MainWindow", "Alt+Left", self.leftscript, 8)
-        self.rightscriptAction = createAction("R&ight SQL script", self, "MainWindow", "Alt+Right", self.rightscript, 8)
+        self.toeditor_action = self.createAction("&SQL Editor", self.toeditor, "Alt+M", "1")
+        self.leftconnection_action = self.createAction("&Left Connection", self.leftconnection, "Alt+Down", "105")
+        self.rightconnection_action = self.createAction("&Right Connection", self.rightconnection, "Alt+Up", "103")
+        self.leftscript_action = self.createAction("L&eft SQL script", self.leftscript, "Alt+Left", "102")
+        self.rightscript_action = self.createAction("R&ight SQL script", self.rightscript, "Alt+Right", "104")
 
-        self.leftpantableAction = createAction("Le&ft pan Table", self, "MainWindow", "Alt+4", self.leftpantable, 8)
-        self.rightpantableAction = createAction("Ri&ght pan Table", self, "MainWindow", "Alt+6", self.rightpantable, 8)
-        self.downpantableAction = createAction("Down pan Table", self, "MainWindow", "Alt+2", self.downpantable, 8)
-        self.uppantableAction = createAction("Up pan Table", self, "MainWindow", "Alt+8", self.uppantable, 8)
+        self.leftpantable_action = self.createAction("Le&ft pan Table", self.leftpantable, "Alt+4", "28")
+        self.rightpantable_action = self.createAction("Ri&ght pan Table", self.rightpantable, "Alt+6", "23")
+        self.downpantable_action = self.createAction("Down pan Table", self.downpantable, "Alt+2", "24")
+        self.uppantable_action = self.createAction("Up pan Table", self.uppantable, "Alt+8", "19")
 
-        self.defaultStretchAction = createAction("Default Stretch Table", self, "MainWindow", "Alt+*", self.defaultstretch, 8)
-        self.expandTableAction = createAction("Expand Table", self, "MainWindow", "Alt++", self.expandtable, 8)
-        self.shrinkTableAction = createAction("Shrink Table", self, "MainWindow", "Alt+-", self.shrinktable, 8)
+        self.defaultstretch_action = self.createAction("Default Stretch Table", self.defaultstretch, "Alt+*", "111")
+        self.expandtable_action = self.createAction("Expand Table", self.expandtable, "Alt++", "112")
+        self.shrinktable_action = self.createAction("Shrink Table", self.shrinktable, "Alt+-", "117")
 
+        self.addActions(self.navigateMenu, ( self.toeditor_action, None, self.leftconnection_action,
+                    self.rightconnection_action, None, self.leftscript_action, self.rightscript_action,
+                    None, self.leftpantable_action, self.rightpantable_action, self.downpantable_action,
+                    self.uppantable_action, None, self.defaultstretch_action, self.expandtable_action,
+                    self.shrinktable_action, ))
 
-        #self.navigateMenu.addAction(self.toConsoleAction)
-        self.navigateMenu.addAction(self.toeditorAction)
-        self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftconnectionAction)
-        self.navigateMenu.addAction(self.rightconnectionAction)
-        self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftscriptAction)
-        self.navigateMenu.addAction(self.rightscriptAction)
-        self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.leftpantableAction)
-        self.navigateMenu.addAction(self.rightpantableAction)
-        self.navigateMenu.addAction(self.downpantableAction)
-        self.navigateMenu.addAction(self.uppantableAction)
-        self.navigateMenu.addSeparator()
-        self.navigateMenu.addAction(self.defaultStretchAction)
-        self.navigateMenu.addAction(self.expandTableAction)
-        self.navigateMenu.addAction(self.shrinkTableAction)
-        #self.navigateMenu.addAction(self.rightpantableAction)
         # ==== ==== ==== ==== ==== ==== ==== ====
         # SETTINGS
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.opensettingsAction = createAction("Open settings", self, "MainWindow", "Ctrl+Alt+S", self.opensettings, 8)
-        self.saveSettingsAction = createAction("Save/Reload settings", self, "MainWindow", "", self.saveSettings, 8)
-        self.importODBCAction = createAction("Import ODBC connetions into settings", self, "MainWindow", "", self.importODBC, 8)
-        self.openODBCmanagerAction = createAction("Open ODBC Manager", self, "MainWindow", "", self.openODBCmanager, 8)
+        self.opensettings_action = self.createAction("Open settings", self.opensettings, "Ctrl+Alt+S")
+        self.savesettings_action = self.createAction("Save/Reload settings", self.saveSettings, "")
+        self.importodbc_action = self.createAction("Import ODBC connetions into settings", self.importODBC, "")
+        self.openodbcmanager_action = self.createAction("Open ODBC Manager", self.openODBCmanager, "")
 
-        self.settingsMenu.addAction(self.opensettingsAction)
-        self.settingsMenu.addAction(self.saveSettingsAction)
-        self.settingsMenu.addSeparator()
-        self.settingsMenu.addAction(self.openODBCmanagerAction)
-        self.settingsMenu.addAction(self.importODBCAction)
+        self.addActions(self.settingsMenu, ( self.opensettings_action, self.savesettings_action, None,
+                            self.importodbc_action, self.openodbcmanager_action, ))
 
         # MENU
         self.menubar.addAction(self.fileMenu.menuAction())
@@ -203,10 +152,33 @@ class Sdbe(QtGui.QMainWindow):
         QtCore.QObject.connect(self.conntabs, QtCore.SIGNAL("tabCloseRequested(int)"), self.conntabs.removeTab)
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        #self.openworkspace()
         QtCore.QTimer.singleShot(0, self.openworkspace)
         #self.statusBar().showMessage('Ready', 2000)
         #self.setToolTip(QtGui.QToolTip())
+
+    def createAction(self, text, slot=None, shortcut=None, icon=None,
+                        tip=None, checkable=False, signal="triggered()"):
+        action = QtGui.QAction(text, self)
+        action.setFont(getFont(8))
+        if icon is not None:
+            action.setIcon(QtGui.QIcon("files/icons/milky/%s.png" % icon))
+        if shortcut is not None:
+            action.setShortcut(shortcut)
+        if tip is not None:
+            action.setToolTip(tip)
+            action.setStatusTip(tip)
+        if slot is not None:
+            self.connect(action, QtCore.SIGNAL(signal), slot)
+        if checkable:
+            action.setCheckable(True)
+        return action
+
+    def addActions(self, target, actions):
+        for action in actions:
+            if action is None:
+                target.addSeparator()
+            else:
+                target.addAction(action)
 
     def isConnectionFunc(self):
         return isinstance(self.conntabs.currentWidget(), Connection)
@@ -546,6 +518,8 @@ class Sdbe(QtGui.QMainWindow):
 
         if reply == QtGui.QMessageBox.Yes:
             self.saveworkspace()
+            settings = QtCore.QSettings()
+            settings.setValue("Geometry", QtCore.QVariant(self.saveGeometry()))
             event.accept()
         else:
             event.ignore()

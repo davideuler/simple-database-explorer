@@ -110,6 +110,15 @@ class FindDialog(QtGui.QDialog):
         self.moreButton.setCheckable(True)
         self.moreButton.setAutoDefault(False)
 
+        # NoFocus
+        self.caseCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.fromStartCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.countButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.replaceButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.replaceAllButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.moreButton.setFocusPolicy(QtCore.Qt.NoFocus)
+
+
         self.buttonBox = QtGui.QDialogButtonBox(QtCore.Qt.Vertical)
         self.buttonBox.addButton(self.findButton, QtGui.QDialogButtonBox.ActionRole)
         self.buttonBox.addButton(self.countButton, QtGui.QDialogButtonBox.ActionRole)
@@ -168,6 +177,8 @@ class FindDialog(QtGui.QDialog):
             return comboBox
 
     def openhistory(self):
+        self.findEdit.clear()
+
         if self.parent().editor.hasSelectedText():
             self.findEdit.addItem(self.parent().editor.selectedText())
 
@@ -199,6 +210,8 @@ class FindDialog(QtGui.QDialog):
         replace[unicode(self.replaceEdit.currentText())] = int(time.time())
         pickle.dump(replace, open("files/search/replace.pickle", "w"))
 
+        self.openhistory()
+
     def findbuttonclick(self):
         self.savehistory()
         ##(const QString & 	expr,
@@ -229,13 +242,13 @@ class FindDialog(QtGui.QDialog):
         QtGui.QMessageBox.information(self, "Count", str(i))
 
     def replacebuttonclick(self):
+        self.savehistory()
         self.parent().editor.replace(unicode(self.replaceEdit.currentText()))
         return self.findbuttonclick()
 
 
     def replaceallclick(self):
-        print "*" * 5
-        print "replaceallclick: %s" % unicode(self.replaceEdit.currentText())
+        self.parent().editor.setCursorPosition(0, 0)
         i = 0
         while self.replacebuttonclick():
             i += 1
