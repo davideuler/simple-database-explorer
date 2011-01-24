@@ -21,21 +21,20 @@ class Sdbe(QtGui.QMainWindow):
     def __init__(self, parent=None):
         super(QtGui.QMainWindow, self).__init__(parent)
         self.setObjectName("SDBE")
-        #self.resize(808, 600)
-        settings = QtCore.QSettings()
-        self.restoreGeometry(settings.value("Geometry").toByteArray())
-        # SETTINGS
-        self.sett = self.loadsettings()
-
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("files/icons/sdbe.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
+
+        # SETTINGS
+        settings = QtCore.QSettings()
+        self.restoreGeometry(settings.value("Geometry").toByteArray())
+        self.sett = self.loadsettings()
 
         self.centralWidget = QtGui.QWidget(self)
         self.centralWidget.setObjectName("centralWidget")
         self.vboxlayout = QtGui.QVBoxLayout(self.centralWidget)
         self.vboxlayout.setSpacing(0)
-        self.vboxlayout.setContentsMargins(1, 1, 1, 2)
+        self.vboxlayout.setContentsMargins(0, 0, 0, 0)
         self.vboxlayout.setObjectName("vboxlayout")
         # MAIN TABS
         self.conntabs = QtGui.QTabWidget(self.centralWidget)
@@ -52,7 +51,7 @@ class Sdbe(QtGui.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         # MENUBAR
         self.menubar = QtGui.QMenuBar(self)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 808, 20))
+        #self.menubar.setGeometry(QtCore.QRect(0, 0, 808, 20))
         self.menubar.setFont(getFont(7))
         self.fileMenu = QtGui.QMenu(self.menubar)
         self.editMenu = QtGui.QMenu(self.menubar)
@@ -64,14 +63,13 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # FILE
         # ==== ==== ==== ==== ==== ==== ==== ====
-        #d:\dev\sdbe\files\icons\milky\130.png
-        self.newconn_action = self.createAction("&New Connection", self.newconnection, "Ctrl+N", "130")
+        # QtGui.QKeySequence.New
+        self.newconn_action = self.createAction("&New Connection", self.newconnection, QtGui.QKeySequence.New, "130")
         self.recent_action = self.createAction("Recent files", self.recent, "", "44")
         self.newsql_action = self.createAction("&New script", self.newscript, "Ctrl+Shift+N", "8")
-        self.open_action = self.createAction("&Open script", self.opendialog, "Ctrl+O", "119")
-        self.save_action = self.createAction("&Save script", self.savedialog, "Ctrl+S", "7")
-        self.saveas_action = self.createAction("&Save As script", self.saveasdialog, "Ctrl+Shift+S", "131")
-
+        self.open_action = self.createAction("&Open script", self.opendialog, QtGui.QKeySequence.Open, "119")
+        self.save_action = self.createAction("&Save script", self.savedialog, QtGui.QKeySequence.Save, "7")
+        self.saveas_action = self.createAction("&Save As script", self.saveasdialog, QtGui.QKeySequence.SaveAs, "131")
 
         self.addActions(self.fileMenu, ( self.newconn_action, None, self.recent_action, None,
                                         self.newsql_action, self.open_action, self.save_action,
@@ -80,10 +78,10 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, "Ctrl+F", "16")
+        self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, QtGui.QKeySequence.Find, "16")
         self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
-        self.comment_action = self.createAction("&Comment selection", self.comment, "Ctrl+B", "38")
-        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
+        self.comment_action = self.createAction("&Comment selection", self.comment, QtGui.QKeySequence.Bold, "38")
+        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, QtGui.QKeySequence, "82")
         self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
         self.addActions(self.editMenu, ( self.searcheditor_action, self.formatsql_action,
@@ -179,20 +177,6 @@ class Sdbe(QtGui.QMainWindow):
                 target.addSeparator()
             else:
                 target.addAction(action)
-
-    def isConnectionFunc(self):
-        return isinstance(self.conntabs.currentWidget(), Connection)
-
-    class isConnection(object):
-        def __init__(self, f):
-            self.f = f
-
-        def __call__(self, *args):
-            print "Entering", self.f.__name__
-            if self.isConnectionFunc():
-                self.f(*args)
-            print "Exited", self.f.__name__
-
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NEW CONN, SQL
