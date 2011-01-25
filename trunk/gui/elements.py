@@ -16,6 +16,7 @@ from sqlkeywords import keywords
 from random import randint
 from dialogs import *
 from general import *
+from cataloginfo import TreeOfTableWidget
 
 class QueryResult:
     """
@@ -342,22 +343,33 @@ class Script(QtGui.QWidget):
         self.horizontalLayout = QtGui.QHBoxLayout(self)
         self.horizontalLayout.setSpacing(1)
         self.horizontalLayout.setMargin(1)
-        #       text
+
+        # catalog tree
+        headers = ["DB Tree"]
+        self.catalogtree = TreeOfTableWidget([["", "", "", "", ""]])
+        self.catalogtree.model().headers = headers
+
+        # sql editor
         self.editor = Editor(self)
         self.editor.setautocomplete(self.connection.catalog.keys())
         self.findDialog = FindDialog(self)
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userlistselected)
 
-        # ===============================================
+        # table
         self.table = Table(self)
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybefetchmore)
 
+
+        #script = self.scripttabs.currentWidget()
+        #script.splitter.addWidget(self.treeWidget)
         # layout
         self.splitter = QtGui.QSplitter(self)
+        self.splitter.addWidget(self.catalogtree)
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.table)
         self.splitter.setStretchFactor(0, 1)
-        self.splitter.setStretchFactor(1, 2)
+        self.splitter.setStretchFactor(1, 3)
+        self.splitter.setStretchFactor(2, 4)
         self.horizontalLayout.addWidget(self.splitter)
 
         self.setLayout(self.horizontalLayout)
@@ -681,9 +693,9 @@ class Connection(QtGui.QWidget):
 ##
 
         print "START CATALOG LOAD: %s" % time.ctime()
-
+        #print  self.cursor.tables(schema=self.connSettings.get('schema', '%'))
         for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
-            #print i
+            print i
             if i.table_name != None:
                 catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
 
@@ -708,18 +720,28 @@ class Connection(QtGui.QWidget):
             self.reloadcatalog()
 
     def showcatalog(self):
+        print "showcatalog"
+        headers = ["DB Tree"]
+        catalog = self.cursor.tables(schema=self.connSettings.get('schema', '%'))
+
+        #treeWidget = TreeOfTableWidget(catalog)
+        #treeWidget.model().headers = headers
+
         script = self.scripttabs.currentWidget()
-        columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
-        printTable = [columns]
-
-        for table in sorted(self.catalog):
-            printTable.append([table, self.catalog[table]["TYPE"], ""])
-            columns = self.catalog[table]["COLUMNS"]
-            for column in columns:
-                printTable.append(["\t%s" % column, 0, 0])
-
-            printTable.append(["", "", ""])
-        script.printmessage(printTable)
+        script.catalogtree.loadcatalog(catalog)
+        #script.splitter.addWidget(self.treeWidget)
+        #script.table = self.treeWidget
+##        columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
+##        printTable = [columns]
+##
+##        for table in sorted(self.catalog):
+##            printTable.append([table, self.catalog[table]["TYPE"], ""])
+##            columns = self.catalog[table]["COLUMNS"]
+##            for column in columns:
+##                printTable.append(["\t%s" % column, 0, 0])
+##
+##            printTable.append(["", "", ""])
+##        script.printmessage(printTable)
 
     def showtooltip(self, text):
         p = self.pos()

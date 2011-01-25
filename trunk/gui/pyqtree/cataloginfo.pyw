@@ -24,19 +24,21 @@ class ServerModel(treeoftable.TreeOfTableModel):
     def data(self, index, role):
         if role == Qt.DecorationRole:
             node = self.nodeFromIndex(index)
+
             if node is None:
                 return QVariant()
             if isinstance(node, treeoftable.BranchNode):
+
                 if index.column() != 0:
                     return QVariant()
-                filename = node.toString().replace(" ", "_")
                 parent = node.parent.toString()
-                if parent and parent != "USA":
-                    return QVariant()
-                if parent == "USA":
-                    filename = "USA_" + filename
+                if not parent:
+                    filename = "db"
+                else:
+                    filename = "folder"
                 filename = os.path.join(os.path.dirname(__file__),
                                         "flags", filename + ".png")
+
                 pixmap = QPixmap(filename)
                 if pixmap.isNull():
                     return QVariant()
@@ -55,7 +57,7 @@ class TreeOfTableWidget(QTreeView):
         try:
             model.load(filename, nesting, separator)
         except IOError, e:
-            QMessageBox.warning(self, "Server Info - Error",
+            QMessageBox.warning(self, "DB Tree Info - Error",
                                 unicode(e))
         self.connect(self, SIGNAL("activated(QModelIndex)"),
                      self.activated)
@@ -81,7 +83,7 @@ class MainForm(QMainWindow):
 
     def __init__(self, filename, nesting, separator, parent=None):
         super(MainForm, self).__init__(parent)
-        headers = ["Country/State (US)/City/Provider"]
+        headers = ["Server Tree"]
 
         self.treeWidget = TreeOfTableWidget(filename, nesting,
                                             separator)
@@ -106,7 +108,7 @@ class MainForm(QMainWindow):
 
 
 app = QApplication(sys.argv)
-nesting = 2
+nesting = 3
 
 form = MainForm(os.path.join(os.path.dirname(__file__), "servers.txt"),
                 nesting, "*")
