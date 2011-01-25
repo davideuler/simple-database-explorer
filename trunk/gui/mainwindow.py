@@ -81,7 +81,7 @@ class Sdbe(QtGui.QMainWindow):
         self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, QtGui.QKeySequence.Find, "16")
         self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
         self.comment_action = self.createAction("&Comment selection", self.comment, QtGui.QKeySequence.Bold, "38")
-        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, QtGui.QKeySequence, "82")
+        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
         self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
         self.addActions(self.editMenu, ( self.searcheditor_action, self.formatsql_action,
