@@ -233,6 +233,7 @@ class Sdbe(QtGui.QMainWindow):
     def newscript(self, path=None):
         if isinstance(self.conntabs.currentWidget(), Connection):
             self.conntabs.currentWidget().newscript()
+            self.showcatalog()
 
     def showtooltip(self, text):
         p = self.pos()
