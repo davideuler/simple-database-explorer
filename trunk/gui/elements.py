@@ -22,42 +22,17 @@ class QueryResult:
     """
         This class saves one query result, status, sql, time and possible errors
     """
-    def __init__(self, query, status, sql="", rows=-1, time=-1, errorcode="", error=""):
+    def __init__(self, query, status, sql="", rows=-1, time=-1, error=""):
         self.query = query
         self.status = status
         self.rows = rows
         self.time = time
-        self.errorcode = errorcode
         self.error = error
         self.sql = sql
 
     def toarray(self):
         """ function to print the query result in the gui table with printMessage """
-        return [self.status, self.rows, self.time, self.errorcode, self.error, self.sql]
-
-class ExecuteThread(QtCore.QThread):
-    """
-        Class executes one select query and returns the resulting rows inside QueryResult
-    """
-    def __init__(self, parent=None):
-       QtCore.QThread.__init__(self, parent)
-       self.script = parent
-       self.result = None
-
-    def run(self):
-        """ runs the thread that only executes the query and sets the QueryResult.
-            It emits a finish signal so the gui knows the query is complete and can unlock the connection.
-        """
-        try:
-            sql = self.script.editor.getsql()
-            startTime = time.time()
-            query = self.script.connection.cursor.execute(sql)
-            self.result = QueryResult(query, "OK", sql, query.rowcount, time.time() - startTime)
-
-        except Exception as exc:
-            self.result = QueryResult(None, "ERROR", sql, -1, -1, "", str(exc))
-        finally:
-            self.emit(QtCore.SIGNAL('finished'))
+        return (self.status, self.rows, self.time, self.error, self.sql)
 
 class ExecuteManyThread(QtCore.QThread):
     """ runs a thread with multiple sql statements and stores the results in a list of QueryResults.
@@ -74,22 +49,19 @@ class ExecuteManyThread(QtCore.QThread):
        self.alive = 1
 
     def run(self):
-        sqlparsed = self.script.editor.getparsedsql()
+        self.sqlparsed = self.script.editor.getparsedsql()
 
-        columns = ["S", "ROWS", "TIME (sec)", "ERROR_CODE", "ERROR", "SQL"]
-        self.printTable = [columns]
-
-        for sql in sqlparsed:
+        for sql in self.sqlparsed:
             if self.alive == 1:
                 try:
                     startTime = time.time()
                     query = self.script.connection.cursor.execute(sql)
                     result = QueryResult(query, "OK", sql, query.rowcount, time.time() - startTime)
-                    self.results.append(result.toarray())
+                    self.results.append(result)
 
                 except Exception as exc:
-                    result = QueryResult(None, "ERROR", sql, -1, -1, "", str(exc))
-                    self.results.append(result.toarray())
+                    result = QueryResult(None, "ERROR", sql, -1, -1, str(exc))
+                    self.results.append(result)
                 finally:
                     self.emit(QtCore.SIGNAL('executed'))
             else:
@@ -100,8 +72,6 @@ class ExecuteManyThread(QtCore.QThread):
     def stop(self):
        self.alive = 0
 
-    def toprint(self):
-        return self.printTable + self.results
 
 class Editor(Qsci.QsciScintilla):
     """
@@ -324,6 +294,25 @@ class Table(QtGui.QTableView):
                 warningMessage("Error copy to clipbord", unicode(exc.args))
 
 
+class ExecuteManyModel(QtGui.QStandardItemModel):
+    def data(self, index, role):
+        value = super(ExecuteManyModel, self).data(index, role)
+        cellvalue = super(ExecuteManyModel, self).data(index)
+
+        if role == QtCore.Qt.TextColorRole and index.column() == 0:
+            if cellvalue == "OK":
+                return QtGui.QColor(QtCore.Qt.black)
+            else:
+                return QtGui.QColor(QtCore.Qt.white)
+
+        if role == QtCore.Qt.BackgroundColorRole and index.column() == 0:
+            if cellvalue == "OK":
+                return QtGui.QColor("#B2EC5D")
+            else:
+                return QtGui.QColor("#FF3300")
+
+        return value
+
 
 class Script(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
@@ -370,6 +359,7 @@ class Script(QtGui.QWidget):
         self.splitter.setStretchFactor(0, 1)
         self.splitter.setStretchFactor(1, 3)
         self.splitter.setStretchFactor(2, 4)
+        #self.splitter.re
         self.horizontalLayout.addWidget(self.splitter)
 
         self.setLayout(self.horizontalLayout)
@@ -486,45 +476,68 @@ class Script(QtGui.QWidget):
         self.table.setWordWrap(True)
         self.table.resizeColumnsToContents()
 
-    def execute(self):
-        sqlparsed = self.editor.getparsedsql()
-        # Reconnect
-        if not self.connection.conn:
-            self.connection.openconnection()
-
-        print len(sqlparsed)
-        print sqlparsed
-
-        if len(sqlparsed) > 0:
-            if len(sqlparsed) == 1 and sqlparsed[0].upper().startswith('SELECT'):
-                self.locktab()
-                self.executeThread = ExecuteThread(self)
-                self.connect(self.executeThread, QtCore.SIGNAL('finished()'), self.postexecute)
-                self.executeThread.start()
-            else:
-                self.executemany()
-
-
     def executemany(self):
         sqlparsed = self.editor.getparsedsql()
 
-        self.fetchedall = True
-        self.locktab()
-        self.executemanythread = ExecuteManyThread(self)
-        self.connect(self.executemanythread, QtCore.SIGNAL('executed'), self.executed)
-        self.connect(self.executemanythread, QtCore.SIGNAL('finished()'), self.postexecutemany)
-        self.executemanythread.start()
+        if not self.connection.conn:
+            self.connection.openconnection()
+
+        if len(sqlparsed) > 0:
+            header = ["S", "ROWS", "TIME (sec)", "ERROR", "SQL"]
+
+            self.fetchedall = True
+            self.locktab()
+            self.executemanythread = ExecuteManyThread(self)
+            self.connect(self.executemanythread, QtCore.SIGNAL('executed'), self.executed)
+            self.connect(self.executemanythread, QtCore.SIGNAL('finished()'), self.postexecutemany)
+
+            # define model
+            self.fetchednum = 0
+            self.executemanymodel = ExecuteManyModel(0, len(header), self)
+            for i, name in enumerate(header):
+                self.executemanymodel.setHeaderData(i, QtCore.Qt.Horizontal, name)
+
+            self.table.setModel(self.executemanymodel)
+            self.table.setWordWrap(True)
+            self.table.resizeColumnsToContents()
+
+            self.executemanythread.start()
 
     def executed(self):
-        self.printmessage(self.executemanythread.toprint())
+        #self.printmessage(self.executemanythread.toprint())
+        result = self.executemanythread.results[self.fetchednum].toarray()
+
+        #print "self.fetchednum:", self.fetchednum
+        self.executemanymodel.insertRow(self.fetchednum, QtCore.QModelIndex())
+
+        #print result
+        for j, column in enumerate(result):
+            #self.model.setData(self.model.index(self.fetchednum, j, QtCore.QModelIndex()), convertforQt(row[j]), role=0)
+            self.executemanymodel.setData(self.executemanymodel.index(self.fetchednum, j, QtCore.QModelIndex()), column, role=0)
+
+        self.fetchednum += 1
 
     def stopexecute(self):
         print "stopexecute"
         self.executemanythread.stop()
 
+    def is_singleselect(self):
+        try:
+            sqlparsed = self.executemanythread.sqlparsed
+            if len(sqlparsed) == 1 and sqlparsed[0].upper().strip().startswith('SELECT'):
+                if self.executemanythread.results[0].status == "OK":
+                    return True
+        except:
+            return False
+
     def postexecutemany(self):
         print "postexecutemany"
         self.unlocktab()
+        self.table.resizeColumnsToContents()
+
+        if self.is_singleselect():
+            self.postexecute()
+
 
     def executetofile(self, path):
         try:
@@ -566,31 +579,51 @@ class Script(QtGui.QWidget):
         s.showMessage("Working")
 
     def postexecute(self):
-        self.unlocktab()
+##        self.unlocktab()
 
-        if self.executeThread.result.status == "OK":
-            self.query = self.executeThread.result.query
-            self.columnsLen = len(self.query.description)
-            # print types
-            for i in self.query.description:
-                print "%s: '%s'" % (i[0], i[1])
-            # New model
-            self.model = QtGui.QStandardItemModel(0, self.columnsLen)
-            # Header
-            for index, column in enumerate(self.query.description):
-                self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
 
-            self.fetchednum = 0
-            self.fetchto = 0
-            self.fetchedall = False
+        self.query = self.executemanythread.results[0].query # self.executeThread.result.query
+        self.columnsLen = len(self.query.description)
+        # print types
+        for i in self.query.description:
+            print "%s: '%s'" % (i[0], i[1])
+        # New model
+        self.model = QtGui.QStandardItemModel(0, self.columnsLen)
+        # Header
+        for index, column in enumerate(self.query.description):
+            self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
 
-            self.table.setModel(self.model)
-            self.fetchMore()
-        else:
-            columns = ["S", "ROWS", "TIME (sec)", "ERROR_CODE", "ERROR", "SQL"]
-            printTable = [columns]
-            printTable.append(self.executeThread.result.toarray())
-            self.printmessage(printTable)
+        self.fetchednum = 0
+        self.fetchto = 0
+        self.fetchedall = False
+
+        self.table.setModel(self.model)
+        self.fetchMore()
+
+
+##        if self.executeThread.result.status == "OK":
+##            self.query = self.executeThread.result.query
+##            self.columnsLen = len(self.query.description)
+##            # print types
+##            for i in self.query.description:
+##                print "%s: '%s'" % (i[0], i[1])
+##            # New model
+##            self.model = QtGui.QStandardItemModel(0, self.columnsLen)
+##            # Header
+##            for index, column in enumerate(self.query.description):
+##                self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
+##
+##            self.fetchednum = 0
+##            self.fetchto = 0
+##            self.fetchedall = False
+##
+##            self.table.setModel(self.model)
+##            self.fetchMore()
+##        else:
+##            columns = ["S", "ROWS", "TIME (sec)", "ERROR_CODE", "ERROR", "SQL"]
+##            printTable = [columns]
+##            printTable.append(self.executeThread.result.toarray())
+##            self.printmessage(printTable)
 
     def unlocktab(self):
 
@@ -731,17 +764,17 @@ class Connection(QtGui.QWidget):
         script.catalogtree.loadcatalog(catalog)
         #script.splitter.addWidget(self.treeWidget)
         #script.table = self.treeWidget
-##        columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
-##        printTable = [columns]
-##
-##        for table in sorted(self.catalog):
-##            printTable.append([table, self.catalog[table]["TYPE"], ""])
-##            columns = self.catalog[table]["COLUMNS"]
-##            for column in columns:
-##                printTable.append(["\t%s" % column, 0, 0])
-##
-##            printTable.append(["", "", ""])
-##        script.printmessage(printTable)
+        columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
+        printTable = [columns]
+
+        for table in sorted(self.catalog):
+            printTable.append([table, self.catalog[table]["TYPE"], ""])
+            columns = self.catalog[table]["COLUMNS"]
+            for column in columns:
+                printTable.append(["\t%s" % column, 0, 0])
+
+            printTable.append(["", "", ""])
+        script.printmessage(printTable)
 
     def showtooltip(self, text):
         p = self.pos()

@@ -8,6 +8,7 @@ from elements import *
 import datetime
 from pyodbc import dataSources
 from subprocess import Popen
+import keyring
 
 class Sdbe(QtGui.QMainWindow):
     """ Sets up the main window of SDBE. It sets a :
@@ -90,7 +91,7 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # ACTION
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.execute_action = self.createAction("&Execute", self.execute, "Alt+X", "98")
+        self.execute_action = self.createAction("&Execute", self.executemany, "Alt+X", "98")
         self.stopexecute_action = self.createAction("&Stop Execute", self.stopexecute, "Ctrl+Q", "116")
         self.executetofile_action = self.createAction("&Execute to file", self.executetofile, "Alt+Ctrl+X", "104")
         self.showautocomplete_action = self.createAction("&Auto Complete", self.showautocomplete, "Ctrl+Space", "3")
@@ -193,10 +194,12 @@ class Sdbe(QtGui.QMainWindow):
 
             if dialog.savePassword.isChecked():
                 self.sett = self.loadsettings()
-                self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", password)
-                self.sett.settings['connections'][connection]["password"] = password
+                self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", 'XX')
+                self.sett.settings['connections'][connection]["password"] = 'XX'
                 yaml.dump(self.sett.settings, open("settings.yaml", "w"))
                 self.sett = self.loadsettings()
+                # --
+                keyring.set_password(connection, 'sdbeuser', password)
 
             connection = self.opennewconnection(connection, password, False)
             connection.openworkspace()
@@ -368,11 +371,11 @@ class Sdbe(QtGui.QMainWindow):
     # ==== ==== ==== ==== ==== ==== ==== ====
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
-    def execute(self):
+    def executemany(self):
         if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
             self.conntabs.currentWidget().saveworkspace()
             startTime = time.time()
-            self.conntabs.currentWidget().scripttabs.currentWidget().execute()
+            self.conntabs.currentWidget().scripttabs.currentWidget().executemany()
             #self.showtooltip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopexecute(self):
