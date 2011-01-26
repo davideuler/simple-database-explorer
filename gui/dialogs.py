@@ -4,6 +4,7 @@ import os
 import time
 import pickle
 import subprocess
+import keyring
 from general import *
 
 class NewConnectionDialog(QtGui.QDialog):
@@ -47,7 +48,13 @@ class NewConnectionDialog(QtGui.QDialog):
         self.setpassword()
 
     def setpassword(self):
-        password = self.settings.get(unicode(self.connectionsComboBox.currentText()), {}).get("password", "")
+        #password = self.settings.get(unicode(self.connectionsComboBox.currentText()), {}).get("password", "")
+        db = unicode(self.connectionsComboBox.currentText())
+        user = 'sdbeuser'
+        password = keyring.get_password(db, user)
+        if password == None:
+            password = ''
+
         self.passwordEdit.setText(password)
 
     def openODBCmanager(self):
