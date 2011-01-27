@@ -8,7 +8,7 @@ from elements import *
 import datetime
 from pyodbc import dataSources
 from subprocess import Popen
-import keyring
+#import keyring
 
 class Sdbe(QtGui.QMainWindow):
     """ Sets up the main window of SDBE. It sets a :
@@ -70,7 +70,7 @@ class Sdbe(QtGui.QMainWindow):
         self.newsql_action = self.createAction("&New script", self.newscript, "Ctrl+Shift+N", "8")
         self.open_action = self.createAction("&Open script", self.opendialog, QtGui.QKeySequence.Open, "119")
         self.save_action = self.createAction("&Save script", self.savedialog, QtGui.QKeySequence.Save, "7")
-        self.saveas_action = self.createAction("&Save As script", self.saveasdialog, QtGui.QKeySequence.SaveAs, "131")
+        self.saveas_action = self.createAction("&Save As script", self.saveasdialog, "Ctrl+Shift+S", "131")
 
         self.addActions(self.fileMenu, ( self.newconn_action, None, self.recent_action, None,
                                         self.newsql_action, self.open_action, self.save_action,
@@ -194,12 +194,12 @@ class Sdbe(QtGui.QMainWindow):
 
             if dialog.savePassword.isChecked():
                 self.sett = self.loadsettings()
-                self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", 'XX')
-                self.sett.settings['connections'][connection]["password"] = 'XX'
+                self.sett.settings['connections'].setdefault(connection, {}).setdefault("password", password)
+                self.sett.settings['connections'][connection]["password"] = password
                 yaml.dump(self.sett.settings, open("settings.yaml", "w"))
                 self.sett = self.loadsettings()
                 # --
-                keyring.set_password(connection, 'sdbeuser', password)
+                #keyring.set_password(connection, 'sdbeuser', password)
 
             connection = self.opennewconnection(connection, password, False)
             connection.openworkspace()
