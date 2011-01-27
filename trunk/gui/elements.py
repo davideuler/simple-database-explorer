@@ -295,7 +295,7 @@ class Table(QtGui.QTableView):
 
 
 class ExecuteManyModel(QtGui.QStandardItemModel):
-    def data(self, index, role):
+    def data(self, index, role=0):
         value = super(ExecuteManyModel, self).data(index, role)
         cellvalue = super(ExecuteManyModel, self).data(index)
 
@@ -353,12 +353,12 @@ class Script(QtGui.QWidget):
         #script.splitter.addWidget(self.treeWidget)
         # layout
         self.splitter = QtGui.QSplitter(self)
-        self.splitter.addWidget(self.catalogtree)
+        #self.splitter.addWidget(self.catalogtree)
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.table)
         self.splitter.setStretchFactor(0, 1)
         self.splitter.setStretchFactor(1, 3)
-        self.splitter.setStretchFactor(2, 4)
+        #self.splitter.setStretchFactor(2, 4)
         #self.splitter.re
         self.horizontalLayout.addWidget(self.splitter)
 
@@ -514,6 +514,16 @@ class Script(QtGui.QWidget):
         for j, column in enumerate(result):
             #self.model.setData(self.model.index(self.fetchednum, j, QtCore.QModelIndex()), convertforQt(row[j]), role=0)
             self.executemanymodel.setData(self.executemanymodel.index(self.fetchednum, j, QtCore.QModelIndex()), column, role=0)
+
+
+
+        # scrool table
+        vertical = self.table.verticalScrollBar()
+        vertical.setFocus()
+        vertical.setValue(vertical.value() + 5)
+
+        if self.fetchednum % 20 == 0:
+            self.table.resizeColumnsToContents()
 
         self.fetchednum += 1
 
@@ -728,7 +738,7 @@ class Connection(QtGui.QWidget):
         print "START CATALOG LOAD: %s" % time.ctime()
         #print  self.cursor.tables(schema=self.connSettings.get('schema', '%'))
         for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
-            print i
+            #print i
             if i.table_name != None:
                 catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
 
