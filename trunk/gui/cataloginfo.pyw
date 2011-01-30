@@ -15,10 +15,10 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import treeoftable
 
-class CatalogModel(treeoftable.TreeOfTableModel):
+class CatalogTreeModel(treeoftable.TreeOfTableModel):
 
     def __init__(self, parent=None):
-        super(CatalogModel, self).__init__(parent)
+        super(CatalogTreeModel, self).__init__(parent)
 
 
     def data(self, index, role):
@@ -45,13 +45,13 @@ class CatalogModel(treeoftable.TreeOfTableModel):
         return treeoftable.TreeOfTableModel.data(self, index, role)
 
 
-class TreeOfTableWidget(QTreeView):
+class CatalogTree(QTreeView):
 
     def __init__(self, catalog, nesting=3, parent=None):
-        super(TreeOfTableWidget, self).__init__(parent)
+        super(CatalogTree, self).__init__(parent)
         self.setSelectionBehavior(QTreeView.SelectItems)
         self.setUniformRowHeights(True)
-        model = CatalogModel(self)
+        model = CatalogTreeModel(self)
         self.setModel(model)
 
         self.loadcatalog(catalog, nesting)
@@ -81,42 +81,4 @@ class TreeOfTableWidget(QTreeView):
             self.resizeColumnToContents(column)
 
 
-##class MainForm(QMainWindow):
-##
-##    def __init__(self, filename, nesting, separator, parent=None):
-##        super(MainForm, self).__init__(parent)
-##
-##        headers = ["Server Tree"]
-##        self.treeWidget = TreeOfTableWidget(catalog)
-##        self.treeWidget.model().headers = headers
-##
-##
-##        self.setCentralWidget(self.treeWidget)
-##
-####        QShortcut(QKeySequence("Escape"), self, self.close)
-####        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
-####
-####        self.connect(self.treeWidget, SIGNAL("activated"),
-####                     self.activated)
-####
-####        #self.setWindowTitle("Server Info")
-####        #self.statusBar().showMessage("Ready...", 5000)
-####
-####
-####    def picked(self):
-####        return self.treeWidget.currentFields()
-####
-####    def activated(self, fields):
-####        self.statusBar().showMessage("*".join(fields), 60000)
-##
-##
-##app = QApplication(sys.argv)
-##
-##
-##form = MainForm(os.path.join(os.path.dirname(__file__), "servers.txt"),
-##                nesting, "*")
-##form.resize(750, 550)
-##form.show()
-##app.exec_()
-##print "*".join(form.picked())
 

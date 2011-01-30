@@ -4,7 +4,7 @@ from yaml.parser import ParserError
 import os
 import time
 from random import randint
-from elements import *
+from connection import *
 import datetime
 from pyodbc import dataSources
 from subprocess import Popen
@@ -18,7 +18,10 @@ class Sdbe(QtGui.QMainWindow):
         Almost all action go thru the Menu bar. It a centralized action base :)
     """
 
-    #Qt.FramelessWindowHint	0x00000800	Produces a borderless window. The user cannot move or resize a borderless window via the window system. On X11, the result of the flag is dependent on the window manager and its ability to understand Motif and/or NETWM hints. Most existing modern window managers can handle this.
+    #Qt.FramelessWindowHint	0x00000800	Produces a borderless window.
+    # The user cannot move or resize a borderless window via the window system.
+    # On X11, the result of the flag is dependent on the window manager and its
+    # ability to understand Motif and/or NETWM hints. Most existing modern window managers can handle this.
     def __init__(self, parent=None):
         super(QtGui.QMainWindow, self).__init__(parent)
         self.setObjectName("SDBE")
@@ -80,12 +83,13 @@ class Sdbe(QtGui.QMainWindow):
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
         self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, QtGui.QKeySequence.Find, "16")
+        self.findnext_action = self.createAction("Find Next", self.findnext, QtGui.QKeySequence.FindNext, "16")
         self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
         self.comment_action = self.createAction("&Comment selection", self.comment, QtGui.QKeySequence.Bold, "38")
         self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
         self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
-        self.addActions(self.editMenu, ( self.searcheditor_action, self.formatsql_action,
+        self.addActions(self.editMenu, ( self.searcheditor_action, self.findnext_action, None, self.formatsql_action,
                         self.comment_action, None, self.joinlines_action, self.splitlines_action ))
 
         # ==== ==== ==== ==== ==== ==== ==== ====
@@ -130,13 +134,12 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # SETTINGS
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.opensettings_action = self.createAction("Open settings", self.opensettings, "Ctrl+Alt+S")
-        self.savesettings_action = self.createAction("Save/Reload settings", self.saveSettings, "")
-        self.importodbc_action = self.createAction("Import ODBC connetions into settings", self.importODBC, "")
+        #self.opensettings_action = self.createAction("Open settings", self.opensettings, "Ctrl+Alt+S")
+        #self.savesettings_action = self.createAction("Save/Reload settings", self.saveSettings, "")
+        #self.importodbc_action = self.createAction("Import ODBC connetions into settings", self.importODBC, "")
         self.openodbcmanager_action = self.createAction("Open ODBC Manager", self.openODBCmanager, "")
-
-        self.addActions(self.settingsMenu, ( self.opensettings_action, self.savesettings_action, None,
-                            self.importodbc_action, self.openodbcmanager_action, ))
+        # self.opensettings_action, self.savesettings_action, None, self.importodbc_action,
+        self.addActions(self.settingsMenu, ( self.openodbcmanager_action, ))
 
         # MENU
         self.menubar.addAction(self.fileMenu.menuAction())
@@ -299,33 +302,30 @@ class Sdbe(QtGui.QMainWindow):
     # EDIT
     # ==== ==== ==== ==== ==== ==== ==== ====
     def comment(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            print "main.comment"
-            self.conntabs.currentWidget().scripttabs.currentWidget().editor.comment()
+        print "main.comment"
+        self.conntabs.currentWidget().scripttabs.currentWidget().editor.comment()
 
     def searcheditor(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().searcheditor()
+        self.conntabs.currentWidget().scripttabs.currentWidget().searcheditor()
+
+    def findnext(self):
+        self.conntabs.currentWidget().scripttabs.currentWidget().findDialog.findbuttonclick()
 
     def joinlines(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().editor.joinlines()
+        self.conntabs.currentWidget().scripttabs.currentWidget().editor.joinlines()
 
     def splitlines(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().editor.splitlines()
+        self.conntabs.currentWidget().scripttabs.currentWidget().editor.splitlines()
 
     # ==== ==== ==== ==== ==== ==== ==== ====
     # NAVIGATE
     # ==== ==== ==== ==== ==== ==== ==== ====
     def toeditor(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().editor.setFocus()
+        self.conntabs.currentWidget().scripttabs.currentWidget().editor.setFocus()
 
      # CONN, SQL
     def leftconnection(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.setCurrentIndex(self.conntabs.currentIndex() - 1)
+        self.conntabs.setCurrentIndex(self.conntabs.currentIndex() - 1)
 
     def rightconnection(self):
         self.conntabs.setCurrentIndex(self.conntabs.currentIndex() + 1)
@@ -372,18 +372,17 @@ class Sdbe(QtGui.QMainWindow):
     # ACTIONS
     # ==== ==== ==== ==== ==== ==== ==== ====
     def executemany(self):
-        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
+        if self.conntabs.currentWidget().isEnabled():
             self.conntabs.currentWidget().saveworkspace()
             startTime = time.time()
             self.conntabs.currentWidget().scripttabs.currentWidget().executemany()
             #self.showtooltip("Sql execute in %s seconds." % round(time.time() - startTime, 4))
 
     def stopexecute(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().stopexecute()
+        self.conntabs.currentWidget().scripttabs.currentWidget().stopexecute()
 
     def executetofile(self):
-        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
+        if self.conntabs.currentWidget().isEnabled():
             self.conntabs.currentWidget().saveworkspace()
             o = QtGui.QFileDialog(self)
             o.setAcceptMode(1)
@@ -391,25 +390,18 @@ class Sdbe(QtGui.QMainWindow):
             o.open()
 
     def copytoclipbord(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().copytoclipbord()
-            self.showtooltip("Selection copied.")
+        self.conntabs.currentWidget().scripttabs.currentWidget().copytoclipbord()
+        self.showtooltip("Selection copied.")
 
     def showautocomplete(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().showautocomplete()
-    # deprecated
-    def showcolumnautocomplete(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().showcolumnautocomplete()
+        self.conntabs.currentWidget().scripttabs.currentWidget().showautocomplete()
 
     def formatsql(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().scripttabs.currentWidget().editor.formatsql()
-            self.showtooltip("Sql has been formated.")
+        self.conntabs.currentWidget().scripttabs.currentWidget().editor.formatsql()
+        self.showtooltip("Sql has been formated.")
 
     def reloadcatalog(self):
-        if isinstance(self.conntabs.currentWidget(), Connection) and self.conntabs.currentWidget().isEnabled():
+        if self.conntabs.currentWidget().isEnabled():
             startTime = time.time()
             self.conntabs.currentWidget().reloadcatalog()
             self.showtooltip("Catalog has been reloadet in %s seconds for %s tables."
@@ -417,8 +409,7 @@ class Sdbe(QtGui.QMainWindow):
                                 len(self.conntabs.currentWidget().catalog)))
 
     def showcatalog(self):
-        if isinstance(self.conntabs.currentWidget(), Connection):
-            self.conntabs.currentWidget().showcatalog()
+        self.conntabs.currentWidget().showcatalog()
     # ==== ==== ==== ==== ==== ==== ==== ====
     # SETTINGS
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -430,30 +421,30 @@ class Sdbe(QtGui.QMainWindow):
             warningMessage("Settings load ERROR.", message[1])
         return sett
 
-    def opensettings(self):
-        settingsTab = SettingsTab(self, 'settings.yaml')
-        self.conntabs.addTab(settingsTab, "")
-        self.conntabs.setTabText(self.conntabs.indexOf(settingsTab), QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
-        self.conntabs.setTabIcon(self.conntabs.indexOf(settingsTab), settingsTab.icon)
-        self.conntabs.setCurrentWidget(settingsTab)
-
-    def saveSettings(self):
-        if isinstance(self.conntabs.currentWidget(), SettingsTab):
-            print "saveSettings"
-            self.conntabs.currentWidget().save()
-            self.sett = self.loadsettings()
-            self.showtooltip("Settings have been saved and reloadet.")
-
-    # use decorator?
-    def importODBC(self):
-        if isinstance(self.conntabs.currentWidget(), SettingsTab):
-            odbc = dataSources()
-
-            for conn in odbc:
-                if conn not in self.sett.settings['connections']:
-                    settingsEditor = self.conntabs.currentWidget().editor
-                    s = "  %s: {password: ENTER_IT}" % (conn)
-                    settingsEditor.setText(settingsEditor.text() + "\n" + s)
+##    def opensettings(self):
+##        settingsTab = SettingsTab(self, 'settings.yaml')
+##        self.conntabs.addTab(settingsTab, "")
+##        self.conntabs.setTabText(self.conntabs.indexOf(settingsTab), QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
+##        self.conntabs.setTabIcon(self.conntabs.indexOf(settingsTab), settingsTab.icon)
+##        self.conntabs.setCurrentWidget(settingsTab)
+##
+##    def saveSettings(self):
+##        if isinstance(self.conntabs.currentWidget(), SettingsTab):
+##            print "saveSettings"
+##            self.conntabs.currentWidget().save()
+##            self.sett = self.loadsettings()
+##            self.showtooltip("Settings have been saved and reloadet.")
+##
+##    # use decorator?
+##    def importODBC(self):
+##        if isinstance(self.conntabs.currentWidget(), SettingsTab):
+##            odbc = dataSources()
+##
+##            for conn in odbc:
+##                if conn not in self.sett.settings['connections']:
+##                    settingsEditor = self.conntabs.currentWidget().editor
+##                    s = "  %s: {password: ENTER_IT}" % (conn)
+##                    settingsEditor.setText(settingsEditor.text() + "\n" + s)
 
     def openODBCmanager(self):
         try:
@@ -523,3 +514,21 @@ class Sdbe(QtGui.QMainWindow):
         self.actionsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Actions", None, QtGui.QApplication.UnicodeUTF8))
         self.navigateMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Navigate", None, QtGui.QApplication.UnicodeUTF8))
         self.settingsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Settings", None, QtGui.QApplication.UnicodeUTF8))
+
+
+class Settings:
+    def __init__(self, settingsFile):
+        self.settingsFile = settingsFile
+    # ==== LOAD SETTINGS ====
+    def load(self):
+        self.settings = {}
+
+        try:
+            self.settings = yaml.load(open(self.settingsFile))
+            return ("OK", "Settings loadet successfully")
+        except IOError, e:
+            open(self.settingsFile, "w").write(open("files/%s.%s" % (self.settingsFile, "example")).read())
+            self.settings = yaml.load(open(self.settingsFile))
+            return ("Info", "Settings file not found! I have created a settings.yml file in files directory. \nGo edit it or just click Settings button!")
+        except ParserError, e:
+            return ("Error", "Settings load ERROR. YAML setting file is corrupt!\n %s" % str(e))

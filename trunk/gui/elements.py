@@ -16,7 +16,7 @@ from sqlkeywords import keywords
 from random import randint
 from dialogs import *
 from general import *
-from cataloginfo import TreeOfTableWidget
+from cataloginfo import CatalogTree
 
 class QueryResult:
     """
@@ -72,228 +72,6 @@ class ExecuteManyThread(QtCore.QThread):
     def stop(self):
        self.alive = 0
 
-
-class Editor(Qsci.QsciScintilla):
-    """
-        Class thats add extra functions to the Qt Scintilla implementation.
-         - some extra fuctions to make editing easier
-         - some user friendly functionalyt: comment, join split lines, ctrl+whell mouse zoom
-         - we set autocomplete from templates and tables names
-    """
-    def __init__(self, parent=None):
-        super(Editor, self).__init__(parent)
-
-        #self.setToolTip("SQL editor")
-        #self.setWhatsThis("")
-        self.setObjectName("sqleditor")
-        self.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
-        self.setFont(getFont(12))
-        self.setUtf8(True)
-        self.setWrapMode(Qsci.QsciScintilla.WrapWord)
-        #self.setMarginsFont(getFont(7))
-        ## line numbers
-        #self.setMarginWidth(0, fm.width( "0000" ) + 2)
-        #self.setMarginLineNumbers(2, True)
-        self.setCaretLineVisible(False)
-        ## Folding visual : we will use boxes, Braces matching
-        self.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
-        self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
-        self.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
-        ## Editing line color
-        self.setCaretLineVisible(True)
-        self.setCaretLineBackgroundColor(QtGui.QColor("#B2EC5D"))
-        ## Marker (bookmarks)
-        self.setMarkerBackgroundColor(QtGui.QColor("#663854"))
-        self.setMarkerForegroundColor(QtGui.QColor("#006B3C"))
-        ## Line numbers margin
-        self.setMarginsBackgroundColor(QtGui.QColor("#F8F4FF"))
-        self.setMarginsForegroundColor(QtGui.QColor("#663854"))
-        ## Indentation
-        self.setAutoIndent(True)
-        self.setIndentationWidth(4)
-        self.setIndentationGuides(1)
-        self.setIndentationsUseTabs(0)
-        unindentshortcut = QtGui.QShortcut(QtGui.QKeySequence("Shift+Tab"), self, self.unindenttext)
-        unindentshortcut.setContext(QtCore.Qt.WidgetShortcut)
-
-        self.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
-        self.setCallTipsVisible(False)
-        self.setautocomplete()
-
-    def getselection(self, linefrom, indexfrom, lineto, indexto):
-        cursorPosition = self.getCursorPosition()
-
-        self.setSelection(linefrom, indexfrom, lineto, indexto)
-        text = unicode(self.selectedText())
-
-        self.setCursorPosition(*cursorPosition)
-
-        return text
-
-    def formatsql(self):
-        if self.hasSelectedText():
-            sql = sqlparse.format(self.findselection(), reindent=True, keyword_case='upper')
-            self.replace(sql)
-
-    def unindenttext(self):
-        if self.hasSelectedText():
-            lines = xrange(self.getSelection()[0], self.getSelection()[2] + 1)
-        else:
-            lines = [self.getCursorPosition()[0]]
-
-        for i in lines:
-            self.unindent(i)
-
-    def getsql(self):
-        if self.hasSelectedText():
-            sql = self.selectedText()
-        else:
-            sql = self.text()
-        # remove sql comments
-        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip())
-
-    def getparsedsql(self):
-        return [i.strip() for i in sqlparse.split(self.getsql()) if i != '']
-
-    def setsql(self, sql):
-        if self.hasSelectedText():
-            print "setsql replace"
-            print sql
-            self.replace(sql)
-        else:
-            self.setText(sql)
-
-    def findselection(self):
-        text = unicode(self.selectedText())
-        s =  self.getSelection()
-        self.findFirst(text, False, False, False, False, True, s[0], s[1], True)
-        return text
-
-    def comment(self):
-        if self.hasSelectedText():
-            text = self.findselection()
-
-            if len([i for i in text.splitlines() if i.startswith("--")]) == len(text.splitlines()):
-                self.replace("\n".join([i[2:] for i in text.splitlines()]))
-            else:
-                self.replace("--" + "\n--".join(text.splitlines()))
-
-    def joinlines(self):
-        if self.hasSelectedText():
-            joiner, ok = QtGui.QInputDialog.getText(self, "Enter joiner...",
-                "Joiner:", QtGui.QLineEdit.Normal,
-                ", ")
-
-        if ok: #  and text != ''
-            text = self.findselection()
-            text = re.split("\n|\r", text)
-            text = unicode(joiner).join([i for i in text if i != ""])
-            self.replace(text)
-
-    def splitlines(self):
-        if self.hasSelectedText():
-            spliter, ok = QtGui.QInputDialog.getText(self, "Enter spliter...",
-                "regex:", QtGui.QLineEdit.Normal,
-                ",")
-
-        if ok and spliter != '':
-            try:
-                spliter = re.compile(unicode(spliter))
-                text = re.split(spliter, unicode(self.findselection()))
-                self.replace("\n".join(text))
-            except Exception as exc:
-                warningMessage("Error splitting line!", unicode(exc.args))
-
-
-    def setautocomplete(self, tables=[]):
-        self.sqlLexer = Qsci.QsciLexerSQL(self)
-        self.api = Qsci.QsciAPIs(self.sqlLexer)
-
-        templates = {}
-
-        for name in ["default.yaml", "user.yaml"]: #default-netezza.yaml, user-netezza.yaml
-            if os.path.exists("files/templates/%s" % name):
-                items = yaml.load(open("files/templates/%s" % name))
-
-                if items != None:
-                    for i in items:
-                        templates[i] = items[i]
-                        templates[i.lower()] = items[i].lower()
-            else:
-                open("files/templates/%s" % name, "w").write('')
-
-        for i in templates:
-            self.api.add(templates[i])
-
-        for i in tables:
-            self.api.add(i)
-
-        self.api.prepare()
-        self.sqlLexer.setAPIs(self.api)
-        self.setLexer(self.sqlLexer)
-
-        self.setAutoCompletionThreshold(2)
-        self.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
-        self.setAutoCompletionCaseSensitivity(False)
-        self.setAutoCompletionReplaceWord(True)
-        self.setAutoCompletionFillupsEnabled(True)
-        #self.setAutoCompletionShowSingle(True)
-
-
-    def wheelEvent(self, event):
-        if event.modifiers() == QtCore.Qt.ControlModifier:
-            if event.delta() > 0:
-                self.zoomIn()
-            else:
-                self.zoomOut()
-        else:
-            vertical = self.verticalScrollBar()
-            vertical.setValue(vertical.value() - int(event.delta() / 20))
-
-class Table(QtGui.QTableView):
-    """  QTableView with default settings and copytoclipbord function """
-    def __init__(self, parent=None):
-        super(Table, self).__init__(parent)
-
-        self.setSortingEnabled(True)
-        self.setFont(getFont(8))
-        self.horizontalHeader().setVisible(True)
-        self.horizontalHeader().setCascadingSectionResizes(True)
-        self.horizontalHeader().setDefaultSectionSize(90)
-        self.horizontalHeader().setSortIndicatorShown(True)
-        self.verticalHeader().setVisible(False)
-        self.setAlternatingRowColors(True)
-        self.setWordWrap(True)
-        self.verticalHeader().setDefaultSectionSize(20)
-        self.verticalHeader().setMinimumSectionSize(16)
-        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) #disable editing
-
-        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, self.copytoclipbord)
-        shortcut.setContext(QtCore.Qt.WidgetShortcut)
-
-
-    def copytoclipbord(self):
-        print "copytoclipbord"
-        try:
-            selection = self.selectionModel()
-            indexes = selection.selectedIndexes()
-
-            columns = indexes[-1].column() - indexes[0].column() + 1
-            rows = len(indexes) / columns
-
-            textTable = [[""] * columns for i in xrange(rows)]
-
-            for i, index in enumerate(indexes):
-                textTable[i % rows][i / rows] = unicode(self.model().data(index).toString())
-
-            headerText = "\t".join((unicode(self.model().headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
-            text = "\n".join(("\t".join(i) for i in textTable))
-            setClipboard(headerText + "\n" + text)
-
-        except Exception as exc:
-                warningMessage("Error copy to clipbord", unicode(exc.args))
-
-
 class ExecuteManyModel(QtGui.QStandardItemModel):
     def data(self, index, role=0):
         value = super(ExecuteManyModel, self).data(index, role)
@@ -335,7 +113,7 @@ class Script(QtGui.QWidget):
 
         # catalog tree
         headers = ["DB Tree"]
-        self.catalogtree = TreeOfTableWidget([["", "", "", "", ""]])
+        self.catalogtree = CatalogTree([["", "", "", "", ""]])
         self.catalogtree.model().headers = headers
 
         # sql editor
@@ -589,10 +367,7 @@ class Script(QtGui.QWidget):
         s.showMessage("Working")
 
     def postexecute(self):
-##        self.unlocktab()
-
-
-        self.query = self.executemanythread.results[0].query # self.executeThread.result.query
+        self.query = self.executemanythread.results[0].query
         self.columnsLen = len(self.query.description)
         # print types
         for i in self.query.description:
@@ -609,31 +384,6 @@ class Script(QtGui.QWidget):
 
         self.table.setModel(self.model)
         self.fetchMore()
-
-
-##        if self.executeThread.result.status == "OK":
-##            self.query = self.executeThread.result.query
-##            self.columnsLen = len(self.query.description)
-##            # print types
-##            for i in self.query.description:
-##                print "%s: '%s'" % (i[0], i[1])
-##            # New model
-##            self.model = QtGui.QStandardItemModel(0, self.columnsLen)
-##            # Header
-##            for index, column in enumerate(self.query.description):
-##                self.model.setHeaderData(index, QtCore.Qt.Horizontal, column[0], role=0)
-##
-##            self.fetchednum = 0
-##            self.fetchto = 0
-##            self.fetchedall = False
-##
-##            self.table.setModel(self.model)
-##            self.fetchMore()
-##        else:
-##            columns = ["S", "ROWS", "TIME (sec)", "ERROR_CODE", "ERROR", "SQL"]
-##            printTable = [columns]
-##            printTable.append(self.executeThread.result.toarray())
-##            self.printmessage(printTable)
 
     def unlocktab(self):
 
@@ -671,270 +421,225 @@ class Script(QtGui.QWidget):
         self.connection.showtooltip("Rows: %s" % self.model.rowCount())
 
 
-class Connection(QtGui.QWidget):
+class Editor(Qsci.QsciScintilla):
     """
-        Implement all the logic for one single connection
-        - connect, reconnect
-        - catalog load and save
-        - workspace per connection...
-        - managing scripts
+        Class thats add extra functions to the Qt Scintilla implementation.
+         - some extra fuctions to make editing easier
+         - some user friendly functionalyt: comment, join split lines, ctrl+whell mouse zoom
+         - we set autocomplete from templates and tables names
     """
-    def __init__(self, parent=None, connName='', password="", connSettings=None):
-        super(Connection, self).__init__(parent)
+    def __init__(self, parent=None):
+        super(Editor, self).__init__(parent)
 
-        # SQLITE
-        self.connSettings = connSettings
-        self.name = connName
-        self.password = password
-
-        self.openconnection()
-        # conn tab
-        self.verticalLayout_3 = QtGui.QVBoxLayout()
-        self.verticalLayout_3.setSpacing(2)
-        self.verticalLayout_3.setContentsMargins(1, 4, 1, 2)
-        #   CHILD TABS
-        self.scripttabs = QtGui.QTabWidget()
-        self.scripttabs.setFont(getFont(11))
-        self.scripttabs.setLayoutDirection(QtCore.Qt.LeftToRight)
-        self.scripttabs.setTabPosition(QtGui.QTabWidget.South)
-        self.scripttabs.setTabShape(QtGui.QTabWidget.Triangular)
-        self.scripttabs.setTabsClosable(True)
-        self.scripttabs.setMovable(True)
-        # layout
-        self.verticalLayout_3.addWidget(self.scripttabs)
-        self.setLayout(self.verticalLayout_3)
-
-        # AUTO COMPLETE
-        self.loadcatalog()
-        self.seticon()
-
-    def openconnection(self):
-        try:
-            self.conn = pyodbc.connect('DSN=%s;PWD=%s' % (self.name, self.password))
-            self.conn.autocommit = True
-            self.cursor = self.conn.cursor()
-        except Exception as exc:
-            self.conn = None
-            warningMessage("Error opening connection: %s" % self.name, unicode(exc.args))
-
-    def seticon(self, path=None):
-        if path == None:
-            if self.conn:
-                self.icon = QtGui.QIcon("files/icons/NormalIcon.ico") #files/icons/working.gif
-            else:
-                self.icon = QtGui.QIcon("files/icons/ModifiedIcon.ico")
-        else:
-            print "path != None"
-            self.icon = QtGui.QIcon(path)
-
-    def getcatalog(self):
-        catalog = {}
-##        if os.path.exists("files/cache/%s.sqlite" % self.name):
-##            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
-##        else:
-##            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
-##
-
-        print "START CATALOG LOAD: %s" % time.ctime()
-        #print  self.cursor.tables(schema=self.connSettings.get('schema', '%'))
-        for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
-            #print i
-            if i.table_name != None:
-                catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
-
-        print "END CATALOG LOAD: %s" % time.ctime()
-
-        return catalog
-
-    def reloadcatalog(self):
-        self.catalog = self.getcatalog()
-        self.savecatalog()
-        # rebuild editor API for autocomplete
-        for scriptIndex in range(0, self.scripttabs.count()):
-            self.scripttabs.widget(scriptIndex).editor.setautocomplete(self.catalog.keys())
-
-    def savecatalog(self):
-        pickle.dump(self.catalog, open("files/cache/%s.pickle" % self.name, "w"))
-
-    def loadcatalog(self):
-        if os.path.exists("files/cache/%s.pickle" % self.name):
-            self.catalog = pickle.load(open("files/cache/%s.pickle" % self.name))
-        else:
-            self.reloadcatalog()
-
-    def showcatalog(self):
-        print "showcatalog"
-        headers = ["DB Tree"]
-        catalog = self.cursor.tables(schema=self.connSettings.get('schema', '%'))
-
-        #treeWidget = TreeOfTableWidget(catalog)
-        #treeWidget.model().headers = headers
-
-        script = self.scripttabs.currentWidget()
-        script.catalogtree.loadcatalog(catalog)
-        #script.splitter.addWidget(self.treeWidget)
-        #script.table = self.treeWidget
-        columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]
-        printTable = [columns]
-
-        for table in sorted(self.catalog):
-            printTable.append([table, self.catalog[table]["TYPE"], ""])
-            columns = self.catalog[table]["COLUMNS"]
-            for column in columns:
-                printTable.append(["\t%s" % column, 0, 0])
-
-            printTable.append(["", "", ""])
-        script.printmessage(printTable)
-
-    def showtooltip(self, text):
-        p = self.pos()
-        p.setX(p.x() + (self.width() / 2))
-        p.setY(p.y() + (self.height() - 10))
-        QtGui.QToolTip.showText(p, text)
-
-    def openfile(self, path):
-        self.scripttabs.currentWidget().editor.setText(open(path).read().decode("UTF-8"))
-        self.scripttabs.currentWidget().saveTo = path
-        self.scripttabs.setTabText(self.scripttabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
-
-    def newscript(self, path=None):
-        path = unicode(path)
-        script = Script(self)
-        self.scripttabs.addTab(script, "")
-        self.scripttabs.setTabText(self.scripttabs.indexOf(script), QtGui.QApplication.translate("MainWindow", "Sql script", None, QtGui.QApplication.UnicodeUTF8))
-        self.scripttabs.setCurrentWidget(script)
-
-        if path != None:
-            try:
-                self.openfile(path)
-                self.scripttabs.setTabText(self.scripttabs.indexOf(script), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
-                # Save for recent
-                if os.path.exists("files/recent/%s.pickle" % self.name):
-                    recent = pickle.load(open("files/recent/%s.pickle" % self.name))
-                else:
-                    recent = {}
-
-                recent[path] = int(time.time())
-                pickle.dump(recent, open("files/recent/%s.pickle" % self.name, "w"))
-
-            except Exception as exc:
-                print "Error opening file: %s" % path, unicode(exc.args)
-
-        if self.scripttabs.count() < 2:
-            self.scripttabs.tabBar().hide()
-        else:
-            self.scripttabs.tabBar().show()
-
-    def saveworkspace(self):
-        workspace = []
-        # If conn dir is in sql folder
-        if not os.path.exists(u"files/sql/%s" % (self.name)):
-            os.mkdir(u"files/sql/%s" % (self.name))
-        # save
-        for scriptIndex in range(0, self.scripttabs.count()):
-            script = self.scripttabs.widget(scriptIndex)
-            if script.saveTo == None:
-                path = u"files/sql/%s/%s_%s.sql" % (self.name, "".join(map(str, time.localtime()[:3])), randint(0, 1000000))
-            else:
-                path = unicode(script.saveTo)
-
-            script.savefile(path)
-            workspace.append(path)
-
-        yaml.dump(workspace, open("files/workspace/%s.yaml" % self.name, "w"))
-
-    def openworkspace(self):
-        if os.path.exists("files/workspace/%s.yaml" % self.name):
-            try:
-                workspace = yaml.load(open("files/workspace/%s.yaml" % self.name))
-            except Exception as exc:
-                warningMessage("Error at loading workspace!", unicode(exc.args))
-                workspace = list()
-
-            if workspace != None:
-                for path in workspace:
-                    print "\t", path
-                    self.newscript(path)
-        else:
-            self.newscript()
-
-
-
-class SettingsTab(QtGui.QWidget):
-    def __init__(self, parent=None, path=None):
-        super(SettingsTab, self).__init__(parent)
-        #   sql tab
-        self.horizontalLayout = QtGui.QHBoxLayout(self)
-        self.horizontalLayout.setSpacing(1)
-        self.horizontalLayout.setMargin(1)
-        #       text
-        font = getFont(12)
-        self.editor = Qsci.QsciScintilla(self)
-        self.editor.setToolTip("QsciScintilla")
-        self.editor.setWhatsThis("")
-        self.editor.setObjectName("textEdit")
-        self.editor.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
-        self.editor.setLexer(Qsci.QsciLexerYAML())
-        fm = QtGui.QFontMetrics(getFont(6))
-        self.editor.setFont(font)
-        self.editor.setMarginsFont(getFont(7))
-        # LINE NUMBERS
-        self.editor.setMarginWidth(0, fm.width( "0000" ) + 2)
-        self.editor.setMarginLineNumbers(2, True)
-        # Folding visual : we will use boxes
-        self.editor.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
-        # Braces matching
-        self.editor.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
+        #self.setToolTip("SQL editor")
+        #self.setWhatsThis("")
+        self.setObjectName("sqleditor")
+        self.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
+        self.setFont(getFont(12))
+        self.setUtf8(True)
+        self.setWrapMode(Qsci.QsciScintilla.WrapWord)
+        #self.setMarginsFont(getFont(7))
+        ## line numbers
+        #self.setMarginWidth(0, fm.width( "0000" ) + 2)
+        #self.setMarginLineNumbers(2, True)
+        self.setCaretLineVisible(False)
+        ## Folding visual : we will use boxes, Braces matching
+        self.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
+        self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
+        self.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
         ## Editing line color
-        self.editor.setCaretLineVisible(True)
-        self.editor.setCaretLineBackgroundColor(QtGui.QColor("#BCD4E6"))
+        self.setCaretLineVisible(True)
+        self.setCaretLineBackgroundColor(QtGui.QColor("#B2EC5D"))
+        ## Marker (bookmarks)
+        self.setMarkerBackgroundColor(QtGui.QColor("#663854"))
+        self.setMarkerForegroundColor(QtGui.QColor("#006B3C"))
+        ## Line numbers margin
+        self.setMarginsBackgroundColor(QtGui.QColor("#F8F4FF"))
+        self.setMarginsForegroundColor(QtGui.QColor("#663854"))
+        ## Indentation
+        self.setAutoIndent(True)
+        self.setIndentationWidth(4)
+        self.setIndentationGuides(1)
+        self.setIndentationsUseTabs(0)
+        unindentshortcut = QtGui.QShortcut(QtGui.QKeySequence("Shift+Tab"), self, self.unindenttext)
+        unindentshortcut.setContext(QtCore.Qt.WidgetShortcut)
 
-        ## Margins colors
-        # line numbers margin
-        self.editor.setMarginsBackgroundColor(QtGui.QColor("#F8F4FF"))
-        self.editor.setMarginsForegroundColor(QtGui.QColor("#663854"))
+        self.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
+        self.setCallTipsVisible(False)
+        self.setautocomplete()
 
-        # folding margin colors (foreground,background)
-        self.editor.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#89CFF0"))
+    def getselection(self, linefrom, indexfrom, lineto, indexto):
+        cursorPosition = self.getCursorPosition()
 
-        self.editor.setAutoIndent(1)
-        self.editor.setIndentationWidth(4)
-        self.editor.setIndentationGuides(1)
-        self.editor.setIndentationsUseTabs(0)
-        self.editor.setAutoCompletionThreshold(2)
-        self.editor.setCallTipsVisible(True)
-        self.editor.setAutoCompletionReplaceWord(True)
-        self.editor.setUtf8(True)
-        self.editor.setWrapMode(Qsci.QsciScintilla.WrapWord)
-        self.editor.setAnnotationDisplay(Qsci.QsciScintilla.AnnotationHidden)
+        self.setSelection(linefrom, indexfrom, lineto, indexto)
+        text = unicode(self.selectedText())
 
-        self.horizontalLayout.addWidget(self.editor)
-        self.setLayout(self.horizontalLayout)
+        self.setCursorPosition(*cursorPosition)
 
-        self.open(path)
-        self.icon = QtGui.QIcon("files/icons/AddedIcon.ico")
+        return text
 
-    def open(self, path):
-        self.editor.setText(open(path).read())
-        self.saveTo = path
+    def formatsql(self):
+        if self.hasSelectedText():
+            sql = sqlparse.format(self.findselection(), reindent=True, keyword_case='upper')
+            self.replace(sql)
 
-    def save(self):
-        open(self.saveTo, "w").write(self.editor.text())
+    def unindenttext(self):
+        if self.hasSelectedText():
+            lines = xrange(self.getSelection()[0], self.getSelection()[2] + 1)
+        else:
+            lines = [self.getCursorPosition()[0]]
+
+        for i in lines:
+            self.unindent(i)
+
+    def getsql(self):
+        if self.hasSelectedText():
+            sql = self.selectedText()
+        else:
+            sql = self.text()
+        # remove sql comments
+        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip())
+
+    def getparsedsql(self):
+        return [i.strip() for i in sqlparse.split(self.getsql()) if i != '']
+
+    def setsql(self, sql):
+        if self.hasSelectedText():
+            print "setsql replace"
+            print sql
+            self.replace(sql)
+        else:
+            self.setText(sql)
+
+    def findselection(self):
+        text = unicode(self.selectedText())
+        s =  self.getSelection()
+        self.findFirst(text, False, False, False, False, True, s[0], s[1], True)
+        return text
+
+    def comment(self):
+        if self.hasSelectedText():
+            text = self.findselection()
+
+            if len([i for i in text.splitlines() if i.startswith("--")]) == len(text.splitlines()):
+                self.replace("\n".join([i[2:] for i in text.splitlines()]))
+            else:
+                self.replace("--" + "\n--".join(text.splitlines()))
+
+    def joinlines(self):
+        if self.hasSelectedText():
+            joiner, ok = QtGui.QInputDialog.getText(self, "Enter joiner...",
+                "Joiner:", QtGui.QLineEdit.Normal,
+                ", ")
+
+        if ok: #  and text != ''
+            text = self.findselection()
+            text = re.split("\n|\r", text)
+            text = unicode(joiner).join([i for i in text if i != ""])
+            self.replace(text)
+
+    def splitlines(self):
+        if self.hasSelectedText():
+            spliter, ok = QtGui.QInputDialog.getText(self, "Enter spliter...",
+                "regex:", QtGui.QLineEdit.Normal,
+                ",")
+
+        if ok and spliter != '':
+            try:
+                spliter = re.compile(unicode(spliter))
+                text = re.split(spliter, unicode(self.findselection()))
+                self.replace("\n".join(text))
+            except Exception as exc:
+                warningMessage("Error splitting line!", unicode(exc.args))
 
 
-class Settings:
-    def __init__(self, settingsFile):
-        self.settingsFile = settingsFile
-    # ==== LOAD SETTINGS ====
-    def load(self):
-        self.settings = {}
+    def setautocomplete(self, tables=[]):
+        self.sqlLexer = Qsci.QsciLexerSQL(self)
+        self.api = Qsci.QsciAPIs(self.sqlLexer)
 
+        templates = {}
+
+        for name in ["default.yaml", "user.yaml"]: #default-netezza.yaml, user-netezza.yaml
+            if os.path.exists("files/templates/%s" % name):
+                items = yaml.load(open("files/templates/%s" % name))
+
+                if items != None:
+                    for i in items:
+                        templates[i] = items[i]
+                        templates[i.lower()] = items[i].lower()
+            else:
+                open("files/templates/%s" % name, "w").write('')
+
+        for i in templates:
+            self.api.add(templates[i])
+
+        for i in tables:
+            self.api.add(i)
+
+        self.api.prepare()
+        self.sqlLexer.setAPIs(self.api)
+        self.setLexer(self.sqlLexer)
+
+        self.setAutoCompletionThreshold(2)
+        self.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
+        self.setAutoCompletionCaseSensitivity(False)
+        self.setAutoCompletionReplaceWord(True)
+        self.setAutoCompletionFillupsEnabled(True)
+        #self.setAutoCompletionShowSingle(True)
+
+
+    def wheelEvent(self, event):
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+            if event.delta() > 0:
+                self.zoomIn()
+            else:
+                self.zoomOut()
+        else:
+            vertical = self.verticalScrollBar()
+            vertical.setValue(vertical.value() - int(event.delta() / 20))
+
+class Table(QtGui.QTableView):
+    """  QTableView with default settings and copytoclipbord function """
+    def __init__(self, parent=None):
+        super(Table, self).__init__(parent)
+
+        self.setSortingEnabled(True)
+        self.setFont(getFont(8))
+        self.horizontalHeader().setVisible(True)
+        self.horizontalHeader().setCascadingSectionResizes(True)
+        self.horizontalHeader().setDefaultSectionSize(90)
+        self.horizontalHeader().setSortIndicatorShown(True)
+        self.verticalHeader().setVisible(False)
+        self.setAlternatingRowColors(True)
+        self.setWordWrap(True)
+        self.verticalHeader().setDefaultSectionSize(20)
+        self.verticalHeader().setMinimumSectionSize(16)
+        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers) #disable editing
+
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, self.copytoclipbord)
+        shortcut.setContext(QtCore.Qt.WidgetShortcut)
+
+
+    def copytoclipbord(self):
+        print "copytoclipbord"
         try:
-            self.settings = yaml.load(open(self.settingsFile))
-            return ("OK", "Settings loadet successfully")
-        except IOError, e:
-            open(self.settingsFile, "w").write(open("files/%s.%s" % (self.settingsFile, "example")).read())
-            self.settings = yaml.load(open(self.settingsFile))
-            return ("Info", "Settings file not found! I have created a settings.yml file in files directory. \nGo edit it or just click Settings button!")
-        except ParserError, e:
-            return ("Error", "Settings load ERROR. YAML setting file is corrupt!\n %s" % str(e))
+            selection = self.selectionModel()
+            indexes = selection.selectedIndexes()
+
+            columns = indexes[-1].column() - indexes[0].column() + 1
+            rows = len(indexes) / columns
+
+            textTable = [[""] * columns for i in xrange(rows)]
+
+            for i, index in enumerate(indexes):
+                textTable[i % rows][i / rows] = unicode(self.model().data(index).toString())
+
+            headerText = "\t".join((unicode(self.model().headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
+            text = "\n".join(("\t".join(i) for i in textTable))
+            setClipboard(headerText + "\n" + text)
+
+        except Exception as exc:
+                warningMessage("Error copy to clipbord", unicode(exc.args))
+
+
+

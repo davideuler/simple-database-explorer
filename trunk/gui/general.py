@@ -14,11 +14,6 @@ def getFont(size):
 
 def setClipboard(text):
     try:
-##        import win32clipboard
-##        win32clipboard.OpenClipboard()
-##        win32clipboard.EmptyClipboard()
-##        win32clipboard.SetClipboardText(text)
-##        win32clipboard.CloseClipboard()
         clipboard = QtGui.QApplication.clipboard()
         clipboard.setText(text)
     except:
@@ -67,8 +62,3 @@ def convertforQt(x):
         return x
     else:
         return x
-
-##def savetohistory(self, name, queryresult):
-##    if not os.path.exists("files/history/%s.sqlite" % name):
-##        conn = sqlite3.connect("files/history/%s.sqlite" % name)
-##        foo.execute("Create table foo ( id integer, name varchar);")
