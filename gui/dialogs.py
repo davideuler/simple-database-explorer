@@ -170,7 +170,7 @@ class FindDialog(QtGui.QDialog):
         self.setLayout(self.mainLayout)
 
         self.setWindowTitle("Find and replace")
-        self.extension.hide()
+        self.extension.show()
 
         self.findFirst = False
         self.openhistory()
@@ -205,7 +205,7 @@ class FindDialog(QtGui.QDialog):
         else:
             find = {}
 
-        find[unicode(self.findEdit.currentText())] = int(time.time())
+        find[unicode(self.findEdit.currentText())[:512]] = int(time.time())
         pickle.dump(find, open("files/search/find.pickle", "w"))
 
         # REPLACE
@@ -214,13 +214,13 @@ class FindDialog(QtGui.QDialog):
         else:
             replace = {}
 
-        replace[unicode(self.replaceEdit.currentText())] = int(time.time())
+        replace[unicode(self.replaceEdit.currentText())[:512]] = int(time.time())
         pickle.dump(replace, open("files/search/replace.pickle", "w"))
 
         self.openhistory()
 
     def findbuttonclick(self):
-        self.savehistory()
+        #self.savehistory()
         ##(const QString & 	expr,
         ##bool 	re,
         ##bool 	cs is true then the search is case sensitive.
@@ -249,7 +249,7 @@ class FindDialog(QtGui.QDialog):
         QtGui.QMessageBox.information(self, "Count", str(i))
 
     def replacebuttonclick(self):
-        self.savehistory()
+        #self.savehistory()
         self.parent().editor.replace(unicode(self.replaceEdit.currentText()))
         return self.findbuttonclick()
 
@@ -261,3 +261,11 @@ class FindDialog(QtGui.QDialog):
             i += 1
 
         QtGui.QMessageBox.information(self, "Replaced items:", str(i))
+
+    def showEvent(self, event):
+        print "showEvent"
+        self.openhistory()
+
+    def hideEvent(self, event):
+        print "hideEvent"
+        self.savehistory()
