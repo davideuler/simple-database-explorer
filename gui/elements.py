@@ -3,6 +3,7 @@ import yaml
 from yaml.parser import ParserError
 import pickle
 import time
+import math
 import sqlparse
 import re
 from threading import Thread
@@ -126,7 +127,6 @@ class Script(QtGui.QWidget):
         self.table = Table(self)
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybefetchmore)
 
-
         #script = self.scripttabs.currentWidget()
         #script.splitter.addWidget(self.treeWidget)
         # layout
@@ -143,10 +143,8 @@ class Script(QtGui.QWidget):
         self.setLayout(self.horizontalLayout)
 
 
-    def searcheditor(self):
-        #dialog = FindDialog(self)
+    def showfinddialog(self):
         self.findDialog.show()
-        #dialog.exec_()
 
     def defaultStretch(self):
         self.splitter.setSizes([200, 200])
@@ -235,6 +233,7 @@ class Script(QtGui.QWidget):
         self.saveTo = path
 
     def savefile(self, path):
+
         open(path, "w").write(unicode(self.editor.text()).encode("UTF-8"))
         self.saveTo = path
 
@@ -282,25 +281,19 @@ class Script(QtGui.QWidget):
             self.executemanythread.start()
 
     def executed(self):
-        #self.printmessage(self.executemanythread.toprint())
         result = self.executemanythread.results[self.fetchednum].toarray()
-
-        #print "self.fetchednum:", self.fetchednum
         self.executemanymodel.insertRow(self.fetchednum, QtCore.QModelIndex())
 
-        #print result
         for j, column in enumerate(result):
-            #self.model.setData(self.model.index(self.fetchednum, j, QtCore.QModelIndex()), convertforQt(row[j]), role=0)
             self.executemanymodel.setData(self.executemanymodel.index(self.fetchednum, j, QtCore.QModelIndex()), column, role=0)
-
-
 
         # scrool table
         vertical = self.table.verticalScrollBar()
         vertical.setFocus()
         vertical.setValue(vertical.value() + 5)
 
-        if self.fetchednum % 20 == 0:
+        #print self.fetchednum, type(self.fetchednum), math.log(self.fetchednum + 1, 2)
+        if math.log(self.fetchednum + 1, 2).is_integer():
             self.table.resizeColumnsToContents()
 
         self.fetchednum += 1

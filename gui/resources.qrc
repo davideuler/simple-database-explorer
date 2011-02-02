@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+	<qresource>
+		<file alias="icon/sdbe.png">../files/icons/sdbe2.png</file>
+
+
+	</qresource>
+</RCC> 
