@@ -8,7 +8,11 @@ from connection import *
 import datetime
 from pyodbc import dataSources
 from subprocess import Popen
+import resources
+import platform
 #import keyring
+
+__version__ = "0.2.0"
 
 class Sdbe(QtGui.QMainWindow):
     """ Sets up the main window of SDBE. It sets a :
@@ -26,7 +30,7 @@ class Sdbe(QtGui.QMainWindow):
         super(QtGui.QMainWindow, self).__init__(parent)
         self.setObjectName("SDBE")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("files/icons/sdbe.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":icon/sdbe.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         # SETTINGS
@@ -62,6 +66,7 @@ class Sdbe(QtGui.QMainWindow):
         self.actionsMenu = QtGui.QMenu(self.menubar)
         self.navigateMenu = QtGui.QMenu(self.menubar)
         self.settingsMenu = QtGui.QMenu(self.menubar)
+        self.helpMenu = QtGui.QMenu(self.menubar)
         self.setMenuBar(self.menubar)
 
         # ==== ==== ==== ==== ==== ==== ==== ====
@@ -82,14 +87,14 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # EDIT
         # ==== ==== ==== ==== ==== ==== ==== ====
-        self.searcheditor_action = self.createAction("&Find and Replace", self.searcheditor, QtGui.QKeySequence.Find, "16")
+        self.showfinddialog_action = self.createAction("&Find and Replace", self.showfinddialog, QtGui.QKeySequence.Find, "16")
         self.findnext_action = self.createAction("Find Next", self.findnext, QtGui.QKeySequence.FindNext, "16")
         self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
         self.comment_action = self.createAction("&Comment selection", self.comment, QtGui.QKeySequence.Bold, "38")
         self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
         self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
-        self.addActions(self.editMenu, ( self.searcheditor_action, self.findnext_action, None, self.formatsql_action,
+        self.addActions(self.editMenu, ( self.showfinddialog_action, self.findnext_action, None, self.formatsql_action,
                         self.comment_action, None, self.joinlines_action, self.splitlines_action ))
 
         # ==== ==== ==== ==== ==== ==== ==== ====
@@ -98,10 +103,10 @@ class Sdbe(QtGui.QMainWindow):
         self.execute_action = self.createAction("&Execute", self.executemany, "Alt+X", "98")
         self.stopexecute_action = self.createAction("&Stop Execute", self.stopexecute, "Ctrl+Q", "116")
         self.executetofile_action = self.createAction("&Execute to file", self.executetofile, "Alt+Ctrl+X", "104")
-        self.showautocomplete_action = self.createAction("&Auto Complete", self.showautocomplete, "Ctrl+Space", "3")
+        self.showautocomplete_action = self.createAction("&Auto Complete", self.showautocomplete, "Ctrl+Space", "13")
         #self.autocolumncomplete_action = self.createAction("&Auto Column Complete", self.showcolumnautocomplete, "Alt+K")
-        self.reloadcatalog_action = self.createAction("&Reload Catalog", self.reloadcatalog, "Ctrl+R", "35")
-        self.showcatalog_action = self.createAction("&Show Catalog", self.showcatalog, "Ctrl+Shift+R", "36")
+        self.reloadcatalog_action = self.createAction("&Reload Catalog", self.reloadcatalog, "Ctrl+R", "48")
+        self.showcatalog_action = self.createAction("&Show Catalog", self.showcatalog, "Ctrl+Shift+R", "123")
 
         self.addActions(self.actionsMenu, ( self.execute_action, self.stopexecute_action,
                         self.executetofile_action, None, self.showautocomplete_action,
@@ -141,12 +146,21 @@ class Sdbe(QtGui.QMainWindow):
         # self.opensettings_action, self.savesettings_action, None, self.importodbc_action,
         self.addActions(self.settingsMenu, ( self.openodbcmanager_action, ))
 
+        # ==== ==== ==== ==== ==== ==== ==== ====
+        # HELP
+        # ==== ==== ==== ==== ==== ==== ==== ====
+        self.helpabout_action = self.createAction("About", self.helpabout, "", "65")
+        self.helphelp_action = self.createAction("Help", self.helphelp, "", "6")
+
+        self.addActions(self.helpMenu, ( self.helpabout_action, self.helphelp_action, ))
+
         # MENU
         self.menubar.addAction(self.fileMenu.menuAction())
         self.menubar.addAction(self.editMenu.menuAction())
         self.menubar.addAction(self.actionsMenu.menuAction())
         self.menubar.addAction(self.navigateMenu.menuAction())
         self.menubar.addAction(self.settingsMenu.menuAction())
+        self.menubar.addAction(self.helpMenu.menuAction())
 
         self.retranslateUi()
         self.conntabs.setCurrentIndex(0)
@@ -279,14 +293,18 @@ class Sdbe(QtGui.QMainWindow):
             else:
                 self.savefile(script.saveTo)
 
-    def savefile(self, s):
+    def savefile(self, path):
         if isinstance(self.conntabs.currentWidget(), Connection):
+            path = unicode(path)
+            if not path.lower().endswith(".sql"):
+                path = path + ".sql"
+
             scripttabs = self.conntabs.currentWidget().scripttabs
             #open(s, "w").write(unicode(scripttabs.currentWidget().editor.text()).encode("UTF-8"))
-            scripttabs.currentWidget().savefile(s)
+            scripttabs.currentWidget().savefile(path)
 
-            scripttabs.currentWidget().saveTo = s
-            scripttabs.setTabText(scripttabs.currentIndex(), QtGui.QApplication.translate("MainWindow", s.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
+            scripttabs.currentWidget().saveTo = path
+            scripttabs.setTabText(scripttabs.currentIndex(), QtGui.QApplication.translate("MainWindow", path.split("/")[-1], None, QtGui.QApplication.UnicodeUTF8))
 
             self.showtooltip("Saved.")
 
@@ -305,8 +323,8 @@ class Sdbe(QtGui.QMainWindow):
         print "main.comment"
         self.conntabs.currentWidget().scripttabs.currentWidget().editor.comment()
 
-    def searcheditor(self):
-        self.conntabs.currentWidget().scripttabs.currentWidget().searcheditor()
+    def showfinddialog(self):
+        self.conntabs.currentWidget().scripttabs.currentWidget().showfinddialog()
 
     def findnext(self):
         self.conntabs.currentWidget().scripttabs.currentWidget().findDialog.findbuttonclick()
@@ -410,6 +428,7 @@ class Sdbe(QtGui.QMainWindow):
 
     def showcatalog(self):
         self.conntabs.currentWidget().showcatalog()
+
     # ==== ==== ==== ==== ==== ==== ==== ====
     # SETTINGS
     # ==== ==== ==== ==== ==== ==== ==== ====
@@ -420,6 +439,26 @@ class Sdbe(QtGui.QMainWindow):
         if message[0] == "Error":
             warningMessage("Settings load ERROR.", message[1])
         return sett
+
+    # ==== ==== ==== ==== ==== ==== ==== ====
+    # HELP
+    # ==== ==== ==== ==== ==== ==== ==== ====
+    def helpabout(self):
+        QtGui.QMessageBox.about(self, "About simple database explorer",
+                """<b>Simple database explorer</b> v %s
+                <p>Open source &copy; 2011 sdbecompany.
+
+                <p>This application can be used to perform
+                simple database exploration.
+                <p>Python %s - Qt %s - PyQt %s on %s""" % (
+                __version__, platform.python_version(),
+                QtCore.QT_VERSION_STR, QtCore.PYQT_VERSION_STR, platform.system()))
+
+    def helphelp(self):
+        #form = helpform.HelpForm("index.html", self)
+        #form.show()
+        QtGui.QMessageBox.about(self, "Help for simple database explorer",
+                """<a href="http://code.google.com/p/simple-database-explorer/">Homepage</a>""")
 
 ##    def opensettings(self):
 ##        settingsTab = SettingsTab(self, 'settings.yaml')
@@ -460,9 +499,8 @@ class Sdbe(QtGui.QMainWindow):
         workspace = []
         for tabIndex in range(self.conntabs.count()):
             tab = self.conntabs.widget(tabIndex)
-            if isinstance(tab, Connection):
-                tab.saveworkspace()
-                workspace.append(tab.name)
+            tab.saveworkspace()
+            workspace.append(tab.name)
 
         yaml.dump(workspace, open("files/workspace.yaml", "w"))
 
@@ -514,6 +552,7 @@ class Sdbe(QtGui.QMainWindow):
         self.actionsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Actions", None, QtGui.QApplication.UnicodeUTF8))
         self.navigateMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Navigate", None, QtGui.QApplication.UnicodeUTF8))
         self.settingsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Settings", None, QtGui.QApplication.UnicodeUTF8))
+        self.helpMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Help", None, QtGui.QApplication.UnicodeUTF8))
 
 
 class Settings:

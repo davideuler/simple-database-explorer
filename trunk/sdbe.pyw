@@ -4,13 +4,23 @@
 from PyQt4 import QtGui, QtCore
 import sys
 from gui.mainwindow import Sdbe
+import gui.resources
+import ctypes
+
+__version__ = "0.2.0"
+
+try:
+    myappid = 'sdbecompany.sdbe.%s' % __version__ # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except:
+    print "Failed to set appusermodelID for icon to work on Windows 7"
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    app.setOrganizationName("SDBE Ltd.")
-    app.setOrganizationDomain("sdbe.eu")
+    app.setOrganizationName("sdbecompany")
+    #app.setOrganizationDomain("sdbe.eu")
     app.setApplicationName("SDBE")
-    app.setWindowIcon(QtGui.QIcon(QtGui.QPixmap("files/icons/sdbe.ico")))
+    app.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(":icon/sdbe.png")))
     window = Sdbe()
     window.show()
 
