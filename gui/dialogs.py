@@ -189,6 +189,8 @@ class FindDialog(QtGui.QDialog):
         if self.parent().editor.hasSelectedText():
             self.findEdit.addItem(self.parent().editor.selectedText())
 
+        #self.findEdit.selectAll()
+
         # FIND
         if os.path.exists("files/search/find.pickle"):
             find = pickle.load(open("files/search/find.pickle"))

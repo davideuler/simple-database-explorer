@@ -2,7 +2,7 @@ from PyQt4 import QtCore, QtGui, Qsci
 import yaml
 from yaml.parser import ParserError
 import pickle
-import time
+#import time
 import math
 import sqlparse
 import re
@@ -18,22 +18,29 @@ from random import randint
 from dialogs import *
 from general import *
 from cataloginfo import CatalogTree
+from datetime import datetime
 
 class QueryResult:
     """
         This class saves one query result, status, sql, time and possible errors
     """
-    def __init__(self, query, status, sql="", rows=-1, time=-1, error=""):
+    def __init__(self, query, status, sql="", rows=-1, starttime=datetime.now(), endtime=datetime.now(), error=""):
         self.query = query
         self.status = status
         self.rows = rows
-        self.time = time
+
+        self.starttime = starttime
+        self.endtime = endtime
         self.error = error
         self.sql = sql
 
+    def gettime(self):
+        self.executiontime = self.endtime - self.starttime
+        return "%s.%s" % (self.executiontime.seconds, int(self.executiontime.microseconds / 100))
+
     def toarray(self):
         """ function to print the query result in the gui table with printMessage """
-        return (self.status, self.rows, self.time, self.error, self.sql)
+        return (self.status, self.rows, self.starttime.strftime('%H:%M:%S'), self.gettime(), self.error, self.sql)
 
 class ExecuteManyThread(QtCore.QThread):
     """ runs a thread with multiple sql statements and stores the results in a list of QueryResults.
@@ -55,13 +62,13 @@ class ExecuteManyThread(QtCore.QThread):
         for sql in self.sqlparsed:
             if self.alive == 1:
                 try:
-                    startTime = time.time()
+                    startime = datetime.now()
                     query = self.script.connection.cursor.execute(sql)
-                    result = QueryResult(query, "OK", sql, query.rowcount, time.time() - startTime)
+                    result = QueryResult(query, "OK", sql, query.rowcount, startime, datetime.now())
                     self.results.append(result)
 
                 except Exception as exc:
-                    result = QueryResult(None, "ERROR", sql, -1, -1, str(exc))
+                    result = QueryResult(None, "ERROR", sql, -1, startime, datetime.now(), str(exc))
                     self.results.append(result)
                 finally:
                     self.emit(QtCore.SIGNAL('executed'))
@@ -260,7 +267,7 @@ class Script(QtGui.QWidget):
             self.connection.openconnection()
 
         if len(sqlparsed) > 0:
-            header = ["S", "ROWS", "TIME (sec)", "ERROR", "SQL"]
+            header = ["S", "ROWS", "START", "TIME", "ERROR", "SQL"]
 
             self.fetchedall = True
             self.locktab()
