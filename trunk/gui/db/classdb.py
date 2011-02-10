@@ -7,6 +7,29 @@ import time
 
 Base = declarative_base()
 
+
+#==== ==== ==== ====
+# Connection
+#==== ==== ==== ====
+class Database(Base):
+    __tablename__  = "database"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(Unicode(128))
+    user = Column(Unicode(128))
+    password = Column(Unicode(128))
+    schema = Column(Unicode(128))
+    #info = relation('ProcessLog', backref='process_log')
+
+    def __init__(self, name, user, password, schema=''):
+        self.name = name
+        self.user = user
+        self.password = password
+        self.schema = schema
+
+    def __repr__(self):
+        return "<Connection('%s','%s')>" % (self.name, self.user)
+
 #==== ==== ==== ====
 # Connection
 #==== ==== ==== ====

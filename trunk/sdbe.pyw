@@ -7,10 +7,9 @@ from gui.mainwindow import Sdbe
 import gui.resources
 import ctypes
 
-__version__ = "0.2.0"
 
 try:
-    myappid = 'sdbecompany.sdbe.%s' % __version__ # arbitrary string
+    myappid = 'sdbecompany.sdbe.%s' # % __version__ # arbitrary string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except:
     print "Failed to set appusermodelID for icon to work on Windows 7"
