@@ -126,7 +126,7 @@ class Script(QtGui.QWidget):
 
         # sql editor
         self.editor = Editor(self)
-        self.editor.setautocomplete(self.connection.catalog.keys())
+        self.editor.setautocomplete(self.connection.catalog)
         self.findDialog = FindDialog(self)
         QtCore.QObject.connect(self.editor, QtCore.SIGNAL("userListActivated(int,QString)"), self.userlistselected)
 
@@ -465,6 +465,7 @@ class Editor(Qsci.QsciScintilla):
         unindentshortcut.setContext(QtCore.Qt.WidgetShortcut)
 
         self.setCallTipsStyle(Qsci.QsciScintilla.CallTipsContext)
+        #self.setCallTipsStyle(QsciScintilla.CallTipsNoContext)
         self.setCallTipsVisible(False)
         self.setautocomplete()
 
@@ -552,9 +553,20 @@ class Editor(Qsci.QsciScintilla):
             except Exception as exc:
                 warningMessage("Error splitting line!", unicode(exc.args))
 
+    def tabletoapi(self, tableline):
+        typemapping = {  'ALIAS': 1,
+                         'GLOBAL TEMPORARY': 2,
+                         'LOCAL TEMPORARY': 3,
+                         'SYNONYM': 4,
+                         'SYSTEM TABLE': 5,
+                         'TABLE': 6,
+                         'VIEW': 7}
+
+        table = ".".join([i.upper() for i in tableline[:-2] if i != 'None'])
+        return table + "?%s" % typemapping.get(tableline[-2], 0)
 
     def setautocomplete(self, tables=[]):
-        self.sqlLexer = Qsci.QsciLexerSQL(self)
+        self.sqlLexer = Qsci.QsciLexerPython(self)
         self.api = Qsci.QsciAPIs(self.sqlLexer)
 
         templates = {}
@@ -574,7 +586,13 @@ class Editor(Qsci.QsciScintilla):
             self.api.add(templates[i])
 
         for i in tables:
-            self.api.add(i)
+            self.api.add(self.tabletoapi(i))
+            #self.api.add(i)
+
+
+        self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
+        self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
+        self.api.add("MAX?4() -> int")
 
         self.api.prepare()
         self.sqlLexer.setAPIs(self.api)
@@ -584,8 +602,8 @@ class Editor(Qsci.QsciScintilla):
         self.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
         self.setAutoCompletionCaseSensitivity(False)
         self.setAutoCompletionReplaceWord(True)
-        self.setAutoCompletionFillupsEnabled(True)
-        #self.setAutoCompletionShowSingle(True)
+        self.setAutoCompletionFillupsEnabled(False)
+        self.setAutoCompletionShowSingle(False)
 
 
     def wheelEvent(self, event):

@@ -141,9 +141,7 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         #self.opensettings_action = self.createAction("Open settings", self.opensettings, "Ctrl+Alt+S")
         #self.savesettings_action = self.createAction("Save/Reload settings", self.saveSettings, "")
-        #self.importodbc_action = self.createAction("Import ODBC connetions into settings", self.importODBC, "")
-        self.openodbcmanager_action = self.createAction("Open ODBC Manager", self.openODBCmanager, "")
-        # self.opensettings_action, self.savesettings_action, None, self.importodbc_action,
+        self.openodbcmanager_action = self.createAction("Open ODBC Manager", self.openODBCmanager, "", "odbcmanager")
         self.addActions(self.settingsMenu, ( self.openodbcmanager_action, ))
 
         # ==== ==== ==== ==== ==== ==== ==== ====
