@@ -168,12 +168,12 @@ class Script(QtGui.QWidget):
 
 
     def getalias(self):
-        self.alias = dict([(i.upper(),i.upper()) for i in self.connection.catalog])
+        self.alias = dict([(i[2].upper(), i[2].upper()) for i in self.connection.catalog])
 
         # create a set of tables that appear in sql (for regex)
         sql = self.editor.getsql().upper()
         words = set(re.split("\s", sql))
-        searchFor = words & set([i.upper() for i in self.connection.catalog])
+        searchFor = words & set([i[2].upper() for i in self.connection.catalog])
         regex = re.compile("|".join(("%s\s+a?s?\s?[\w\_]+" % re.escape(i) for i in searchFor)), re.IGNORECASE)
 
         for line in sql.splitlines():
@@ -590,9 +590,9 @@ class Editor(Qsci.QsciScintilla):
             #self.api.add(i)
 
 
-        self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
-        self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
-        self.api.add("MAX?4() -> int")
+        #self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
+        #self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
+        #self.api.add("MAX?4() -> int")
 
         self.api.prepare()
         self.sqlLexer.setAPIs(self.api)
