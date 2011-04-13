@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-
 #irc://irc.freenode.net/pyqt
 from PyQt4 import QtGui, QtCore
 import sys
 from gui.mainwindow import Sdbe
 import gui.resources
 import ctypes
-
 
 try:
     myappid = 'sdbecompany.sdbe.%s' # % __version__ # arbitrary string

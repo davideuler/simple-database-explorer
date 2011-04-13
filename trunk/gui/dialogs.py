@@ -13,12 +13,18 @@ class NewConnectionDialog(QtGui.QDialog):
         self.connections = pyodbc.dataSources()
         self.settings = settings
 
+        #self.connectionsComboBox = QtGui.QListWidget(self)
         self.connectionsComboBox = self.createcombobox()
         self.connectionsComboBox.setAutoCompletion(True)
         self.connectionsComboBox.setAutoCompletionCaseSensitivity(True)
         self.connectionsComboBox.setFont(getFont(14))
         self.fillcombobox()
         self.connectionsComboBox.setFocus()
+
+        #
+        self.usernameEdit = QtGui.QLineEdit()
+        self.schemaEdit = QtGui.QLineEdit()
+
         self.passwordEdit = QtGui.QLineEdit()
         self.passwordEdit.setEchoMode(QtGui.QLineEdit.Password)
         self.savePassword = QtGui.QCheckBox("Save password")
@@ -35,13 +41,19 @@ class NewConnectionDialog(QtGui.QDialog):
 
         self.mainLayout.addWidget(QtGui.QLabel("ODBC connection:"), 0, 0)
         self.mainLayout.addWidget(self.connectionsComboBox, 0, 1)
-        self.mainLayout.addWidget(QtGui.QLabel("Password:"), 1, 0)
-        self.mainLayout.addWidget(self.passwordEdit, 1, 1)
-        self.mainLayout.addWidget(self.savePassword, 2, 1)
+        self.mainLayout.addWidget(QtGui.QLabel("Username:"), 1, 0)
+        self.mainLayout.addWidget(self.usernameEdit, 1, 1)
+        self.mainLayout.addWidget(QtGui.QLabel("Password:"), 2, 0)
+        self.mainLayout.addWidget(self.passwordEdit, 2, 1)
+        self.mainLayout.addWidget(self.savePassword, 3, 1)
 
-        self.mainLayout.addWidget(QtGui.QLabel("Open ODBC manager:"), 3, 0)
-        self.mainLayout.addWidget(self.odbcManagerButton, 3, 1)
-        self.mainLayout.addWidget(self.buttonBox, 4, 1)
+        self.mainLayout.addWidget(QtGui.QLabel("Shema:"), 4, 0)
+        self.mainLayout.addWidget(self.schemaEdit, 4, 1)
+
+
+        self.mainLayout.addWidget(QtGui.QLabel("Open ODBC manager:"), 5, 0)
+        self.mainLayout.addWidget(self.odbcManagerButton, 5, 1)
+        self.mainLayout.addWidget(self.buttonBox, 6, 1)
         self.setLayout(self.mainLayout)
 
         self.setWindowTitle("Open new odbc connection")

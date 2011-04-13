@@ -3,6 +3,7 @@ import yaml
 from yaml.parser import ParserError
 from elements import *
 import pyodbc
+from collections import defaultdict
 #from pyodbc import dataSources
 
 class Connection(QtGui.QWidget):
@@ -62,20 +63,26 @@ class Connection(QtGui.QWidget):
             self.icon = QtGui.QIcon(path)
 
     def getcatalog(self):
-        catalog = {}
+        catalog = []
 ##        if os.path.exists("files/cache/%s.sqlite" % self.name):
 ##            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
 ##        else:
 ##            catalog2 = sqlite3.connect("files/cache/%s.sqlite" % self.name)
 ##
+##table_cat: The catalog name.
+##table_schem: The schema name.
+##table_name: The table name.
+##table_type: One of TABLE, VIEW, SYSTEM TABLE, GLOBAL TEMPORARY, LOCAL TEMPORARY, ALIAS, SYNONYM, or a data source-specific type name.
+##remarks: A description of the table.
+
 
         print "START CATALOG LOAD: %s" % time.ctime()
         #print  self.cursor.tables(schema=self.connSettings.get('schema', '%'))
-        for i in self.cursor.tables(schema=self.connSettings.get('schema', '%')):
+        for i in self.cursor.tables(): #schema=self.connSettings.get('schema', '%')
             #print i
             if i.table_name != None:
-                catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
-
+                #catalog[i.table_name.upper()] = dict([("TYPE", i.table_type), ("COLUMNS", dict())])
+                catalog.append(map(str, [i.table_cat, i.table_schem, i.table_name, i.table_type, i.remarks]))
         print "END CATALOG LOAD: %s" % time.ctime()
 
         return catalog
@@ -85,7 +92,7 @@ class Connection(QtGui.QWidget):
         self.savecatalog()
         # rebuild editor API for autocomplete
         for scriptIndex in range(0, self.scripttabs.count()):
-            self.scripttabs.widget(scriptIndex).editor.setautocomplete(self.catalog.keys())
+            self.scripttabs.widget(scriptIndex).editor.setautocomplete(self.catalog)
 
     def savecatalog(self):
         pickle.dump(self.catalog, open("files/cache/%s.pickle" % self.name, "w"))
@@ -112,10 +119,10 @@ class Connection(QtGui.QWidget):
         printTable = [columns]
 
         for table in sorted(self.catalog):
-            printTable.append([table, self.catalog[table]["TYPE"], ""])
-            columns = self.catalog[table]["COLUMNS"]
-            for column in columns:
-                printTable.append(["\t%s" % column, 0, 0])
+            printTable.append([table[2], table[3], ""])
+##            columns = self.catalog[table]["COLUMNS"]
+##            for column in columns:
+##                printTable.append(["\t%s" % column, 0, 0])
 
             printTable.append(["", "", ""])
         script.printmessage(printTable)
