@@ -78,6 +78,7 @@ class Connection(QtGui.QWidget):
 
         print "START CATALOG LOAD: %s" % time.ctime()
         #print  self.cursor.tables(schema=self.connSettings.get('schema', '%'))
+        # all: catalog='%'
         for i in self.cursor.tables(): #schema=self.connSettings.get('schema', '%')
             #print i
             if i.table_name != None:

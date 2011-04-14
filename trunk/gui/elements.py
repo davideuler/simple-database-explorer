@@ -566,7 +566,7 @@ class Editor(Qsci.QsciScintilla):
         return table + "?%s" % typemapping.get(tableline[-2], 0)
 
     def setautocomplete(self, tables=[]):
-        self.sqlLexer = Qsci.QsciLexerPython(self)
+        self.sqlLexer = Qsci.QsciLexerSQL(self) #QsciLexerPython
         self.api = Qsci.QsciAPIs(self.sqlLexer)
 
         templates = {}
@@ -586,9 +586,8 @@ class Editor(Qsci.QsciScintilla):
             self.api.add(templates[i])
 
         for i in tables:
-            self.api.add(self.tabletoapi(i))
-            #self.api.add(i)
-
+            #self.api.add(self.tabletoapi(i))
+            self.api.add(i[2])
 
         #self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
         #self.api.add("STG_CRM.INFORMAT.STG_PARTY?10")
