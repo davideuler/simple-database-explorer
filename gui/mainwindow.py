@@ -10,7 +10,7 @@ from pyodbc import dataSources
 from subprocess import Popen
 import resources
 import platform
-import keyring
+#import keyring
 
 __version__ = "0.2.0"
 
@@ -214,7 +214,7 @@ class Sdbe(QtGui.QMainWindow):
                 yaml.dump(self.sett.settings, open("settings.yaml", "w"))
                 self.sett = self.loadsettings()
                 # --
-                keyring.set_password(connection, 'sdbeuser', password)
+                #keyring.set_password(connection, 'sdbeuser', password)
 
             connection = self.opennewconnection(connection, password, False)
             connection.openworkspace()
