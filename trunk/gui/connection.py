@@ -40,6 +40,7 @@ class Connection(QtGui.QWidget):
         self.setLayout(self.verticalLayout_3)
 
         # AUTO COMPLETE
+        self.columnscatalog = defaultdict(list)
         self.loadcatalog()
         self.seticon()
 
@@ -107,13 +108,13 @@ class Connection(QtGui.QWidget):
     def showcatalog(self):
         print "showcatalog"
         headers = ["DB Tree"]
-        catalog = self.cursor.tables(schema=self.connSettings.get('schema', '%'))
+        #catalog = self.cursor.tables(schema=self.connSettings.get('schema', '%'))
 
         #treeWidget = CatalogTree(catalog)
         #treeWidget.model().headers = headers
 
         script = self.scripttabs.currentWidget()
-        script.catalogtree.loadcatalog(catalog)
+        #script.catalogtree.loadcatalog(catalog)
         #script.splitter.addWidget(self.treeWidget)
         #script.table = self.treeWidget
         columns = ["TABLE/COLUMN", "TYPE", "LENGTH"]

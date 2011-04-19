@@ -195,20 +195,20 @@ class Script(QtGui.QWidget):
 
         if tempAlias in self.alias:
             tableName = unicode(self.alias[tempAlias])
-            columns = self.connection.catalog[tableName]["COLUMNS"].keys()
+            columns = [i[3] for i in self.connection.columnscatalog[tableName]]
 
             if len(columns) == 0:
-                print "GET columns catalog from DB!"
-                self.connection.catalog[tableName]["COLUMNS"] = {}
+                print "GET columnscatalog from DB!"
+                #self.connection.catalog[tableName]["COLUMNS"] = {}
                 for c in self.connection.cursor.columns(table=tableName):
-                    self.connection.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
+                    self.connection.columnscatalog[tableName].append(c)
                 # workaround.. cuz of casesensitivity..
-                for c in self.connection.cursor.columns(table=tableName.lower()):
-                    self.connection.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
+##                for c in self.connection.cursor.columns(table=tableName.lower()):
+##                    self.connection.catalog[tableName]["COLUMNS"][c[3]] = (c[6], c[7])
 
                 self.connection.savecatalog()
 
-                columns = self.connection.catalog[tableName]["COLUMNS"].keys()
+                columns = [i[3] for i in self.connection.columnscatalog[tableName]]
 
         self.editor.setCursorPosition(x, y)
 
@@ -421,6 +421,13 @@ class Script(QtGui.QWidget):
         self.connection.showtooltip("Rows: %s" % self.model.rowCount())
 
 
+class TestQsciLexerPython(Qsci.QsciLexerPython):
+    def __init__(self, parent=None):
+        super(TestQsciLexerPython, self).__init__(parent)
+
+    def keywords(self, set_num):
+        return 'select as'
+
 class Editor(Qsci.QsciScintilla):
     """
         Class thats add extra functions to the Qt Scintilla implementation.
@@ -566,7 +573,7 @@ class Editor(Qsci.QsciScintilla):
         return table + "?%s" % typemapping.get(tableline[-2], 0)
 
     def setautocomplete(self, tables=[]):
-        self.sqlLexer = Qsci.QsciLexerSQL(self) #QsciLexerPython
+        self.sqlLexer = Qsci.QsciLexerSQL(self) #QsciLexerPython #TestQsciLexerPython #$TestQsciLexerPython
         self.api = Qsci.QsciAPIs(self.sqlLexer)
 
         templates = {}
