@@ -644,6 +644,9 @@ class Table(QtGui.QTableView):
         shortcut.setContext(QtCore.Qt.WidgetShortcut)
 
 
+    def convertstring(self, s):
+        return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")
+
     def copytoclipbord(self):
         print "copytoclipbord"
         try:
@@ -656,7 +659,7 @@ class Table(QtGui.QTableView):
             textTable = [[""] * columns for i in xrange(rows)]
 
             for i, index in enumerate(indexes):
-                textTable[i % rows][i / rows] = unicode(self.model().data(index).toString())
+                textTable[i % rows][i / rows] = self.convertstring(unicode(self.model().data(index).toString()))
 
             headerText = "\t".join((unicode(self.model().headerData(i, QtCore.Qt.Horizontal).toString()) for i in range(indexes[0].column(), indexes[-1].column() + 1)))
             text = "\n".join(("\t".join(i) for i in textTable))
