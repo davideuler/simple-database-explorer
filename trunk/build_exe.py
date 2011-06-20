@@ -270,6 +270,6 @@ setup(
 
 # No post-compilation code added
 
-#os.popen('rar a exe\DemoCollector-build-%s.rar exe\DemoCollector-build-%s' % (version, version))
+os.popen('"c:/Program Files/WinRAR/Rar.exe" a files/exe/sdbe-build-%s.rar files/exe/sdbe-build-%s' % (version, version))
 
 # And we are done. That's a setup script :-D
