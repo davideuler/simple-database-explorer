@@ -428,6 +428,14 @@ class TestQsciLexerPython(Qsci.QsciLexerPython):
     def keywords(self, set_num):
         return 'select as'
 
+    def isCommentStyle(self, style):
+        """
+        Public method to check, if a style is a comment style.
+
+        @return flag indicating a comment style (boolean)
+        """
+        return True # Tstyle in [Qsci.]
+
 class Editor(Qsci.QsciScintilla):
     """
         Class thats add extra functions to the Qt Scintilla implementation.
@@ -573,7 +581,7 @@ class Editor(Qsci.QsciScintilla):
         return table + "?%s" % typemapping.get(tableline[-2], 0)
 
     def setautocomplete(self, tables=[]):
-        self.sqlLexer = Qsci.QsciLexerSQL(self) #QsciLexerPython #TestQsciLexerPython #$TestQsciLexerPython
+        self.sqlLexer = TestQsciLexerPython(self) #QsciLexerPython #TestQsciLexerPython #$TestQsciLexerPython
         self.api = Qsci.QsciAPIs(self.sqlLexer)
 
         templates = {}
