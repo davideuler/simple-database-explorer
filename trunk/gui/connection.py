@@ -41,7 +41,10 @@ class Connection(QtGui.QWidget):
 
         # AUTO COMPLETE
         self.columnscatalog = defaultdict(list)
-        self.loadcatalog()
+        self.catalog = []
+        #self.loadcatalog()
+        QtCore.QTimer.singleShot(0, self.loadcatalog)
+
         self.seticon()
 
     def openconnection(self):
@@ -130,6 +133,7 @@ class Connection(QtGui.QWidget):
         script.printmessage(printTable)
 
     def showtooltip(self, text):
+        # TODO: qfontmetrics bouding box
         p = self.pos()
         p.setX(p.x() + (self.width() / 2))
         p.setY(p.y() + (self.height() - 10))

@@ -7,6 +7,7 @@ import subprocess
 #import keyring
 from general import *
 
+
 class NewConnectionDialog(QtGui.QDialog):
     def __init__(self, parent=None, settings=None):
         super(NewConnectionDialog, self).__init__(parent)
