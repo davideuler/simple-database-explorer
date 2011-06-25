@@ -115,6 +115,7 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # NAVIGATE
         # ==== ==== ==== ==== ==== ==== ==== ====
+        # TODO: create a txt file as a settings for all the actions
         self.toeditor_action = self.createAction("&SQL Editor", self.toeditor, "Alt+M", "1")
         self.leftconnection_action = self.createAction("&Left Connection", self.leftconnection, "Alt+Down", "105")
         self.rightconnection_action = self.createAction("&Right Connection", self.rightconnection, "Alt+Up", "103")
@@ -319,7 +320,10 @@ class Sdbe(QtGui.QMainWindow):
     # ==== ==== ==== ==== ==== ==== ==== ====
     def comment(self):
         print "main.comment"
+        c = self.conntabs.currentWidget().scripttabs.currentWidget()
+        #getattr(w, nameAction)()
         self.conntabs.currentWidget().scripttabs.currentWidget().editor.comment()
+
 
     def showfinddialog(self):
         self.conntabs.currentWidget().scripttabs.currentWidget().showfinddialog()

@@ -19,6 +19,7 @@ from dialogs import *
 from general import *
 from cataloginfo import CatalogTree
 from datetime import datetime
+import console
 
 class QueryResult:
     """
@@ -43,11 +44,15 @@ class QueryResult:
         return (self.status, self.rows, self.starttime.strftime('%H:%M:%S'), self.gettime(), self.error, self.sql)
 
 class ExecuteManyThread(QtCore.QThread):
-    """ runs a thread with multiple sql statements and stores the results in a list of QueryResults.
-        - each time a sql is executed it emits a 'executed' signal that print the currently executed statements.
-        - when all the sql statements are executed a 'finished' signal tells the gui to unlock the gui.
+    """ runs a thread with multiple sql statements and stores the results in
+        a list of QueryResults.
+        - each time a sql is executed it emits a 'executed' signal that
+          print the currently executed statements.
+        - when all the sql statements are executed a 'finished' signal tells
+          the gui to unlock the gui.
 
-        We dont call the printMessage directly cuz of Qt limitation of creating childs in another thread.
+        We dont call the printMessage directly cuz of Qt limitation of
+        creating childs in another thread.
         Signals are the adviced approch to work around this limitation.
     """
     def __init__(self, parent=None):
@@ -134,11 +139,19 @@ class Script(QtGui.QWidget):
         self.table = Table(self)
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybefetchmore)
 
+        # console
+        self.console = console.Console(startup_message='Welcome to SDBE :)')
+        self.console.updateNamespace({'table' : self.table})
+
+
+##        console = Console(startup_message=welcome_message)
+##        console.updateNamespace({'myVar1' : app, 'myVar2' : 1234})
         #script = self.scripttabs.currentWidget()
         #script.splitter.addWidget(self.treeWidget)
         # layout
         self.splitter = QtGui.QSplitter(self)
         #self.splitter.addWidget(self.catalogtree)
+        self.splitter.addWidget(self.console)
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.table)
         self.splitter.setStretchFactor(0, 1)
@@ -181,7 +194,7 @@ class Script(QtGui.QWidget):
                 name, alias = re.split("\s|as", newAlias)
                 if alias not in keywords:
                     self.alias[alias] = name
-
+    # TODO: very ugly
     def showcolumnautocomplete(self):
         columns = []
         self.getalias()
@@ -581,7 +594,7 @@ class Editor(Qsci.QsciScintilla):
         return table + "?%s" % typemapping.get(tableline[-2], 0)
 
     def setautocomplete(self, tables=[]):
-        self.sqlLexer = TestQsciLexerPython(self) #QsciLexerPython #TestQsciLexerPython #$TestQsciLexerPython
+        self.sqlLexer = Qsci.QsciLexerSQL(self) #QsciLexerPython #TestQsciLexerPython #$TestQsciLexerPython
         self.api = Qsci.QsciAPIs(self.sqlLexer)
 
         templates = {}
@@ -651,6 +664,15 @@ class Table(QtGui.QTableView):
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, self.copytoclipbord)
         shortcut.setContext(QtCore.Qt.WidgetShortcut)
 
+
+
+    def __iter__(self):
+        # self.convertstring(unicode(self.model().data(index).toString())
+        if self.model():
+            for i in range(self.model().rowCount()):
+                l = [unicode(self.model().data(self.model().index(i, j)).toString()) \
+                        for j in range(self.model().columnCount())]
+                yield l
 
     def convertstring(self, s):
         return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")

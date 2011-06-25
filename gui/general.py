@@ -5,7 +5,7 @@ import sqlite3
 
 def getFont(size):
     font = QtGui.QFont()
-    font.setFamily("Verdana")
+    #font.setFamily("Verdana")
     font.setPointSize(size)
     font.setWeight(50)
     font.setItalic(False)
