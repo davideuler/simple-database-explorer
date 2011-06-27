@@ -160,11 +160,10 @@ class Script(QtGui.QWidget):
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybefetchmore)
 
         # console
-        self.console = Console(startup_message='there is table variable')
+        self.console = Console(startup_message='--there is table')
         self.console.updateNamespace({  'table' : self.table,
                                         'self': self,
                                         'mainwindow': self.connection.mainwindow})
-        syntax.PythonHighlighter(self.console.document())
 
         # layout
         self.leftsplitter = QtGui.QSplitter(QtCore.Qt.Vertical, self)
@@ -492,8 +491,8 @@ class Editor(Qsci.QsciScintilla):
         #self.setMarginLineNumbers(2, True)
         self.setCaretLineVisible(False)
         ## Folding visual : we will use boxes, Braces matching
-        self.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
-        self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
+        #self.setFolding(Qsci.QsciScintilla.BoxedTreeFoldStyle)
+        #self.setFoldMarginColors(QtGui.QColor("#006B3C"),QtGui.QColor("#01796F"))
         self.setBraceMatching(Qsci.QsciScintilla.SloppyBraceMatch)
         ## Editing line color
         self.setCaretLineVisible(True)
