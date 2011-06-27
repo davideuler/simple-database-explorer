@@ -18,6 +18,7 @@ class Connection(QtGui.QWidget):
         super(Connection, self).__init__(parent)
 
         # SQLITE
+        self.mainwindow = parent
         self.connSettings = connSettings
         self.name = connName
         self.password = password

@@ -26,12 +26,13 @@ class Sdbe(QtGui.QMainWindow):
     # The user cannot move or resize a borderless window via the window system.
     # On X11, the result of the flag is dependent on the window manager and its
     # ability to understand Motif and/or NETWM hints. Most existing modern window managers can handle this.
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, application=None):
         super(QtGui.QMainWindow, self).__init__(parent)
         self.setObjectName("SDBE")
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":icon/sdbe.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
+        self.application = application
 
         # SETTINGS
         settings = QtCore.QSettings()
@@ -117,6 +118,7 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # TODO: create a txt file as a settings for all the actions
         self.toeditor_action = self.createAction("&SQL Editor", self.toeditor, "Alt+M", "1")
+        self.toconsole_action = self.createAction("&Console", self.toconsole, "Alt+I", "1")
         self.leftconnection_action = self.createAction("&Left Connection", self.leftconnection, "Alt+Down", "105")
         self.rightconnection_action = self.createAction("&Right Connection", self.rightconnection, "Alt+Up", "103")
         self.leftscript_action = self.createAction("L&eft SQL script", self.leftscript, "Alt+Left", "102")
@@ -131,7 +133,7 @@ class Sdbe(QtGui.QMainWindow):
         self.expandtable_action = self.createAction("Expand Table", self.expandtable, "Alt++", "112")
         self.shrinktable_action = self.createAction("Shrink Table", self.shrinktable, "Alt+-", "117")
 
-        self.addActions(self.navigateMenu, ( self.toeditor_action, None, self.leftconnection_action,
+        self.addActions(self.navigateMenu, ( self.toeditor_action, self.toconsole_action, None, self.leftconnection_action,
                     self.rightconnection_action, None, self.leftscript_action, self.rightscript_action,
                     None, self.leftpantable_action, self.rightpantable_action, self.downpantable_action,
                     self.uppantable_action, None, self.defaultstretch_action, self.expandtable_action,
@@ -343,6 +345,8 @@ class Sdbe(QtGui.QMainWindow):
     def toeditor(self):
         self.conntabs.currentWidget().scripttabs.currentWidget().editor.setFocus()
 
+    def toconsole(self):
+        self.conntabs.currentWidget().scripttabs.currentWidget().console.setFocus()
      # CONN, SQL
     def leftconnection(self):
         self.conntabs.setCurrentIndex(self.conntabs.currentIndex() - 1)

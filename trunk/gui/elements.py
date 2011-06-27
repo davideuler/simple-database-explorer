@@ -19,7 +19,8 @@ from dialogs import *
 from general import *
 from cataloginfo import CatalogTree
 from datetime import datetime
-import console
+from console import Console
+import syntax
 
 class QueryResult:
     """
@@ -104,6 +105,26 @@ class ExecuteManyModel(QtGui.QStandardItemModel):
 
         return value
 
+##class LeftWidget(QtGui.QWidget):
+##    def __init__(self, editor, console, parent=None):
+##        super(LeftWidget, self).__init__(parent)
+##
+##        self.editor = editor
+##        self.console = console
+##
+##        self.splitter = QtGui.QSplitter(QtCore.Qt.Vertical, self)
+##        self.splitter.addWidget(self.editor)
+##        self.splitter.addWidget(self.console)
+##        self.splitter.setStretchFactor(0, 4)
+##        self.splitter.setStretchFactor(1, 1)
+##
+##        self.horizontalLayout = QtGui.QHBoxLayout(self)
+##        self.horizontalLayout.setSpacing(1)
+##        self.horizontalLayout.setMargin(1)
+##        self.horizontalLayout.addWidget(self.splitter)
+##
+##        self.setLayout(self.horizontalLayout)
+
 
 class Script(QtGui.QWidget):
     def __init__(self, parent=None, conn=None):
@@ -119,10 +140,9 @@ class Script(QtGui.QWidget):
         self.fetchto = 0
         self.model = QtGui.QStandardItemModel(0, 0)
 
-
         self.horizontalLayout = QtGui.QHBoxLayout(self)
-        self.horizontalLayout.setSpacing(1)
-        self.horizontalLayout.setMargin(1)
+        self.horizontalLayout.setSpacing(0)
+        self.horizontalLayout.setMargin(0)
 
         # catalog tree
         headers = ["DB Tree"]
@@ -140,24 +160,24 @@ class Script(QtGui.QWidget):
         QtCore.QObject.connect(self.table.verticalScrollBar(), QtCore.SIGNAL("valueChanged(int)"), self.maybefetchmore)
 
         # console
-        self.console = console.Console(startup_message='Welcome to SDBE :)')
-        self.console.updateNamespace({'table' : self.table})
+        self.console = Console(startup_message='there is table variable')
+        self.console.updateNamespace({  'table' : self.table,
+                                        'self': self,
+                                        'mainwindow': self.connection.mainwindow})
+        syntax.PythonHighlighter(self.console.document())
 
-
-##        console = Console(startup_message=welcome_message)
-##        console.updateNamespace({'myVar1' : app, 'myVar2' : 1234})
-        #script = self.scripttabs.currentWidget()
-        #script.splitter.addWidget(self.treeWidget)
         # layout
+        self.leftsplitter = QtGui.QSplitter(QtCore.Qt.Vertical, self)
+        self.leftsplitter.addWidget(self.editor)
+        self.leftsplitter.addWidget(self.console)
+        self.leftsplitter.setStretchFactor(0, 4)
+        self.leftsplitter.setStretchFactor(1, 1)
+
         self.splitter = QtGui.QSplitter(self)
-        #self.splitter.addWidget(self.catalogtree)
-        self.splitter.addWidget(self.console)
-        self.splitter.addWidget(self.editor)
+        self.splitter.addWidget(self.leftsplitter)
         self.splitter.addWidget(self.table)
         self.splitter.setStretchFactor(0, 1)
         self.splitter.setStretchFactor(1, 3)
-        #self.splitter.setStretchFactor(2, 4)
-        #self.splitter.re
         self.horizontalLayout.addWidget(self.splitter)
 
         self.setLayout(self.horizontalLayout)

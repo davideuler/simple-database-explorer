@@ -18,7 +18,7 @@ if __name__ == '__main__':
     #app.setOrganizationDomain("sdbe.eu")
     app.setApplicationName("SDBE")
     app.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(":icon/sdbe.png")))
-    window = Sdbe()
+    window = Sdbe(None, app)
     window.show()
 
     sys.exit(app.exec_())
