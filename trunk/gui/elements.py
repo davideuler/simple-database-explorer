@@ -168,7 +168,7 @@ class Script(QtGui.QWidget):
         # layout
         self.leftsplitter = QtGui.QSplitter(QtCore.Qt.Vertical, self)
         self.leftsplitter.addWidget(self.editor)
-        self.leftsplitter.addWidget(self.console)
+        #self.leftsplitter.addWidget(self.console)
         self.leftsplitter.setStretchFactor(0, 4)
         self.leftsplitter.setStretchFactor(1, 1)
 
@@ -371,7 +371,7 @@ class Script(QtGui.QWidget):
 
                 for row in self.query:
                     #print row
-                    line = u"%s;\n" % u";".join(map(unicode, row))
+                    line = u"%s;\n" % u";".join([unicode(i).replace(';', '') for i in row])
                     o.write(line.encode('UTF-8'))
             o.close()
         except Exception as exc:
@@ -416,6 +416,9 @@ class Script(QtGui.QWidget):
 
         self.table.setModel(self.model)
         self.fetchMore()
+
+        # add column names to autocomplete
+        self.editor.addautocomplete([i[0] for i in self.query.description])
 
     def unlocktab(self):
 
@@ -652,6 +655,11 @@ class Editor(Qsci.QsciScintilla):
         self.setAutoCompletionShowSingle(False)
 
 
+    def addautocomplete(self, values):
+        for v in values:
+            self.api.add(v)
+
+        self.api.prepare()
     def wheelEvent(self, event):
         if event.modifiers() == QtCore.Qt.ControlModifier:
             if event.delta() > 0:
