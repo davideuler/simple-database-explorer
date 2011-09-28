@@ -17,7 +17,8 @@ from sqlkeywords import keywords
 from random import randint
 from dialogs import *
 from general import *
-from cataloginfo import CatalogTree
+import codecs
+#from cataloginfo import CatalogTree
 from datetime import datetime
 from console import Console
 import syntax
@@ -146,8 +147,8 @@ class Script(QtGui.QWidget):
 
         # catalog tree
         headers = ["DB Tree"]
-        self.catalogtree = CatalogTree([["", "", "", "", ""]])
-        self.catalogtree.model().headers = headers
+        #self.catalogtree = CatalogTree([["", "", "", "", ""]])
+        #self.catalogtree.model().headers = headers
 
         # sql editor
         self.editor = Editor(self)
@@ -362,7 +363,7 @@ class Script(QtGui.QWidget):
     def executetofile(self, path):
         try:
             self.query = self.connection.cursor.execute(self.editor.getsql())
-            o = open(path, "w", 5000)
+            o = codecs.open(path, "w", 'utf-8-sig', buffering=5000)
 
             if self.query:
                 # HEADER
@@ -372,7 +373,7 @@ class Script(QtGui.QWidget):
                 for row in self.query:
                     #print row
                     line = u"%s;\n" % u";".join([unicode(i).replace(';', '') for i in row])
-                    o.write(line.encode('UTF-8'))
+                    o.write(line)
             o.close()
         except Exception as exc:
                 warningMessage("Error executing to file!", unicode(exc.args))
@@ -519,6 +520,9 @@ class Editor(Qsci.QsciScintilla):
         self.setCallTipsVisible(False)
         self.setautocomplete()
 
+        self.mark_before = '!!<mark>!!'
+        self.mark = '--<mark>--'
+
     def getselection(self, linefrom, indexfrom, lineto, indexto):
         cursorPosition = self.getCursorPosition()
 
@@ -543,16 +547,31 @@ class Editor(Qsci.QsciScintilla):
         for i in lines:
             self.unindent(i)
 
+    def stripcomments(self, s):
+        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", s)
+
     def getsql(self):
+
         if self.hasSelectedText():
-            sql = self.selectedText()
+            sql = unicode(self.selectedText()).strip()
+            return self.stripcomments(sql)
         else:
-            sql = self.text()
-        # remove sql comments
-        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", unicode(sql).strip())
+            sql = unicode(self.text())
+
+            sql_lines = sql.splitlines()
+            line_number = self.getCursorPosition()[0]
+            sql_lines[line_number] = sql_lines[line_number] + self.mark_before
+
+            sql_marked = self.stripcomments('\n'.join(sql_lines))
+            sql_marked = sql_marked.replace(self.mark_before, self.mark)
+
+            return sql_marked
 
     def getparsedsql(self):
-        return [i.strip() for i in sqlparse.split(self.getsql()) if i != '']
+        if self.hasSelectedText():
+            return [i.strip() for i in sqlparse.split(self.getsql()) if i != '']
+        else:
+            return [i.strip() for i in sqlparse.split(self.getsql()) if i != '' and self.mark in i]
 
     def setsql(self, sql):
         if self.hasSelectedText():
