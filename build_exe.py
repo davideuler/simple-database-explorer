@@ -190,7 +190,7 @@ data_files = [('files', ['files/settings.yaml.example']),
 
 
 
-includes = ['sip', 'decimal', 'datetime']
+includes = ['sip', 'decimal', 'datetime', 'yaml']
 excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'email', 'pywin.debugger',
             'pywin.debugger.dbgcon', 'pywin.dialogs', 'tcl',
             'Tkconstants', 'Tkinter']

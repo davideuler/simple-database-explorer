@@ -92,7 +92,8 @@ class Sdbe(QtGui.QMainWindow):
         self.findnext_action = self.createAction("Find Next", self.findnext, QtGui.QKeySequence.FindNext, "16")
         self.formatsql_action = self.createAction("&Format SQL", self.formatsql, "Ctrl+Shift+F", "27")
         self.comment_action = self.createAction("&Comment selection", self.comment, QtGui.QKeySequence.Bold, "38")
-        self.joinlines_action = self.createAction("&Join selected Lines", self.joinlines, "Ctrl+J", "82")
+        self.joinlines_action = self.createAction("&Join selected Lines",
+                self.joinlines, "Ctrl+Shift+J", "82")
         self.splitlines_action = self.createAction("&Split selected Lines", self.splitlines, "Ctrl+I", "83")
 
         self.addActions(self.editMenu, ( self.showfinddialog_action, self.findnext_action, None, self.formatsql_action,
@@ -118,20 +119,24 @@ class Sdbe(QtGui.QMainWindow):
         # ==== ==== ==== ==== ==== ==== ==== ====
         # TODO: create a txt file as a settings for all the actions
         self.toeditor_action = self.createAction("&SQL Editor", self.toeditor, "Alt+M", "1")
-        self.toconsole_action = self.createAction("&Console", self.toconsole, "Alt+I", "1")
-        self.leftconnection_action = self.createAction("&Left Connection", self.leftconnection, "Alt+Down", "105")
-        self.rightconnection_action = self.createAction("&Right Connection", self.rightconnection, "Alt+Up", "103")
-        self.leftscript_action = self.createAction("L&eft SQL script", self.leftscript, "Alt+Left", "102")
-        self.rightscript_action = self.createAction("R&ight SQL script", self.rightscript, "Alt+Right", "104")
+        self.toconsole_action = self.createAction("&Console", self.toconsole, "", "1")
+        self.leftconnection_action = self.createAction("&Left Connection",
+                self.leftconnection, "Ctrl+H", "105")
+        self.rightconnection_action = self.createAction("&Right Connection",
+                self.rightconnection, "Ctrl+L", "103")
+        self.leftscript_action = self.createAction("L&eft SQL script",
+                self.leftscript, "Ctrl+J", "102")
+        self.rightscript_action = self.createAction("R&ight SQL script",
+                self.rightscript, "Ctrl+K", "104")
 
-        self.leftpantable_action = self.createAction("Le&ft pan Table", self.leftpantable, "Alt+4", "28")
-        self.rightpantable_action = self.createAction("Ri&ght pan Table", self.rightpantable, "Alt+6", "23")
-        self.downpantable_action = self.createAction("Down pan Table", self.downpantable, "Alt+2", "24")
-        self.uppantable_action = self.createAction("Up pan Table", self.uppantable, "Alt+8", "19")
+        self.leftpantable_action = self.createAction("Le&ft pan Table", self.leftpantable, "Alt+H", "28")
+        self.rightpantable_action = self.createAction("Ri&ght pan Table", self.rightpantable, "Alt+L", "23")
+        self.downpantable_action = self.createAction("Down pan Table", self.downpantable, "Alt+J", "24")
+        self.uppantable_action = self.createAction("Up pan Table", self.uppantable, "Alt+K", "19")
 
         self.defaultstretch_action = self.createAction("Default Stretch Table", self.defaultstretch, "Alt+*", "111")
-        self.expandtable_action = self.createAction("Expand Table", self.expandtable, "Alt++", "112")
-        self.shrinktable_action = self.createAction("Shrink Table", self.shrinktable, "Alt+-", "117")
+        self.expandtable_action = self.createAction("Expand Table", self.expandtable, "Alt+I", "112")
+        self.shrinktable_action = self.createAction("Shrink Table", self.shrinktable, "Alt+O", "117")
 
         self.addActions(self.navigateMenu, ( self.toeditor_action, self.toconsole_action, None, self.leftconnection_action,
                     self.rightconnection_action, None, self.leftscript_action, self.rightscript_action,
@@ -558,7 +563,7 @@ class Sdbe(QtGui.QMainWindow):
         self.actionsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Actions", None, QtGui.QApplication.UnicodeUTF8))
         self.navigateMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Navigate", None, QtGui.QApplication.UnicodeUTF8))
         self.settingsMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Settings", None, QtGui.QApplication.UnicodeUTF8))
-        self.helpMenu.setTitle(QtGui.QApplication.translate("MainWindow", "&Help", None, QtGui.QApplication.UnicodeUTF8))
+        self.helpMenu.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
 
 
 class Settings:
