@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui, Qsci
+﻿from PyQt4 import QtCore, QtGui, Qsci
 import yaml
 from yaml.parser import ParserError
 import pickle
@@ -211,9 +211,13 @@ class Script(QtGui.QWidget):
 
         for line in sql.splitlines():
             for newAlias in re.findall(regex, line):
-                name, alias = re.split("\s|as", newAlias)
-                if alias not in keywords:
-                    self.alias[alias] = name
+                if newAlias:
+                    print '"%s"' % newAlias
+                    name, alias = re.split("\s|as", newAlias)
+                    print name, alias
+                    if alias not in keywords:
+                        print ' set alias'
+                        self.alias[alias] = name
     # TODO: very ugly
     def showcolumnautocomplete(self):
         columns = []
@@ -360,10 +364,29 @@ class Script(QtGui.QWidget):
             self.postexecute()
 
 
+    def convertstring(self, s):
+        #if isinstance(s, str):
+        #    s = s.replace(u'\x8a', u'Š')
+        #    s = s.replace(u'\x8e', u'Ž')
+        #    s = s.replace(u'\u017e', u'ž')
+        #    s = s.replace(u'\xc3\x96', u'\xd6')
+
+        #    s = s.replace(u'\xc6', u'Ć')
+        #    s = s.replace(u'\xc8', u'Č')
+        #    s = s.replace(u'\xe8', u'č')
+
+        #    s = s.replace(u'\xd0', u'Ð')
+        #    s = s.replace(u'\xdc', u'Ü')
+        #    s = s.replace(u'\xd7', u'')
+
+        s = unicode(s)
+        
+        return s.replace("\r", "\\r").replace("\n", "\\n").replace(";", "")
+
     def executetofile(self, path):
         try:
             self.query = self.connection.cursor.execute(self.editor.getsql())
-            o = codecs.open(path, "w", 'utf-8-sig', buffering=5000)
+            o = codecs.open(path, "w", 'utf-8-sig', buffering=10000000)
 
             if self.query:
                 # HEADER
@@ -372,7 +395,7 @@ class Script(QtGui.QWidget):
 
                 for row in self.query:
                     #print row
-                    line = u"%s;\n" % u";".join([unicode(i).replace(';', '') for i in row])
+                    line = u"%s;\n" % u";".join([self.convertstring(i) for i in row])
                     o.write(line)
             o.close()
         except Exception as exc:
@@ -420,6 +443,12 @@ class Script(QtGui.QWidget):
 
         # add column names to autocomplete
         self.editor.addautocomplete([i[0] for i in self.query.description])
+        # add alias to autocomplete
+        #self.getalias()
+        #print 'Add alias to autocomplete'
+        #for i in self.alias:
+        #    print i, self.alias[i]
+        #self.editor.addautocomplete(self.alias.keys())
 
     def unlocktab(self):
 
@@ -548,7 +577,7 @@ class Editor(Qsci.QsciScintilla):
             self.unindent(i)
 
     def stripcomments(self, s):
-        return re.sub("\-\-.*\n|\/\*.*\*\/", " ", s)
+        return re.sub("\-\-.*\n|\/\*[^\+].*\*\/", " ", s)
 
     def getsql(self):
 
